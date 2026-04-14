@@ -1728,6 +1728,11 @@ a.app-title:hover {
   scrollbar-color: var(--muted-2) transparent;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 10px;
+  /* Reserve horizontal pan for this container. Without pan-x, iOS Safari
+     cannot tell a horizontal strip-swipe from a vertical page-scroll and
+     the horizontal gesture is lost to the page. */
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
 }
 .rep-strip-wrap::-webkit-scrollbar {
   height: 6px;
@@ -1767,7 +1772,10 @@ a.app-title:hover {
 .rep-slot-video .yt-facade {
   width: 100%;
   height: 100%;
-  aspect-ratio: unset;
+  /* Strip mode: the parent slot already enforces 16:9 via its fixed
+     height × 16/9 width; the facade just fills. Kill padding-top so
+     the facade doesn't add extra ratio on top. */
+  padding-top: 0;
   border: none;
   border-radius: 0;
 }
@@ -1829,10 +1837,15 @@ a.app-title:hover {
 }
 
 /* ---------- YouTube facade (thumbnail + play, iframe on click) ---------- */
+/* Uses padding-top: 56.25% for a 16:9 box, same reason as .rep-card-img-wrap:
+   aspect-ratio has lazy-load edge cases on older iPadOS Safari where the
+   facade briefly collapses before the thumbnail loads. The .rep-slot-video
+   override (strip mode) uses `aspect-ratio: unset` + explicit height, so
+   its `.yt-facade` flows from the parent slot height instead. */
 .yt-facade {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  padding-top: 56.25%;
   background: #000;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1840,6 +1853,8 @@ a.app-title:hover {
   cursor: pointer;
 }
 .yt-thumb {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -1867,6 +1882,8 @@ a.app-title:hover {
   transform: translate(-50%, -50%) scale(1.04);
 }
 .yt-iframe {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -1886,11 +1903,6 @@ a.app-title:hover {
   margin-right: auto;
   display: block;
 }
-.rep-overview .yt-facade,
-.rep-overview .rep-caption {
-  /* cage the overview video under max-width so it doesn't span wider than readable */
-}
-
 /* ---------- Lightbox ---------- */
 /* Three ways to exit: × button, tap image (1 finger), tap backdrop, Esc.
    Pinch is two-finger so it zooms without triggering close. The top bar
@@ -2003,13 +2015,21 @@ body.lightbox-open {
 .rep-card:hover { transform: translateY(-2px); }
 
 .rep-card-img-wrap {
+  /* Square 1:1 wrapper, bulletproof on every browser. padding-top:100%
+     forces the box height = width; the img inside is absolutely
+     positioned to fill. This avoids the aspect-ratio inconsistency seen
+     on older iPadOS Safari where lazy-loaded images would render at
+     natural size inside the aspect-ratio box. */
   width: 100%;
-  aspect-ratio: 1 / 1;
+  padding-top: 100%;
+  position: relative;
   background: #fafafa;
   border: 1px solid var(--line);
   overflow: hidden;
 }
 .rep-card-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2100,21 +2120,44 @@ body.lightbox-open {
   background: #fafafa;
 }
 
-/* Video wrapper — 16:9 facade sized to article column width */
+/* Video wrapper — the facade carries its own 16:9 via padding-top */
 .basics-video {
   margin: clamp(18px, 2.6vw, 28px) 0;
 }
-.basics-video .yt-facade {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-}
 
-/* Mobile polish */
+/* Mobile polish — repertoire + basics + shared */
 @media (max-width: 760px) {
   .rep-terms {
     grid-template-columns: 1fr;
   }
   .lightbox-hint .vi { display: none; }
+
+  /* Basics article — tighten padding and let long headings wrap */
+  .basics-article {
+    padding: clamp(20px, 5vw, 36px) var(--pad) clamp(48px, 8vw, 80px);
+  }
+  .basics-h2,
+  .basics-h3,
+  .basics-h4,
+  .basics-p {
+    /* Long English-Vietnamese title fragments ("Where to Pluck with
+       Your Index, Middle, and Thumb") must break mid-word on narrow
+       screens instead of forcing horizontal overflow. */
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  .basics-h2 {
+    margin-top: clamp(28px, 5vw, 40px);
+  }
+
+  /* Shared hero (used by basics + repertoire + subpages): tighter top
+     padding on mobile so the title isn't pushed below the fold. */
+  .rep-hero {
+    padding-top: clamp(24px, 5vw, 48px);
+  }
+  .rep-title .vi-big {
+    font-size: clamp(30px, 9vw, 48px);
+  }
 }
 
 /* ---------- Footer ---------- */
@@ -2445,60 +2488,15 @@ body.lightbox-open {
   max-width: 64ch;
 }
 
-.schedule-gate {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fafafa;
-  max-width: 560px;
-}
-
-.schedule-gate-label {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-  font-weight: 700;
-}
-
-.schedule-gate-label .vi {
-  font-weight: 400;
-  color: var(--muted);
-  font-style: italic;
-  text-transform: none;
-  letter-spacing: 0.02em;
-}
-
-.schedule-gate-input {
-  flex: 1 1 140px;
-  min-width: 120px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  background: #fff;
-  font: inherit;
-  font-size: 14px;
-  border-radius: var(--radius);
-  letter-spacing: 0.08em;
-}
-
-.schedule-gate-input:focus {
-  outline: none;
-  border-color: var(--ink);
-}
-
-.schedule-gate-btn {
+/* "I have a code" CTA — opens the password modal. Sits on the
+   right edge of the schedule head so the schedule headline
+   reads first, the CTA second. */
+.code-cta {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0;
-  padding: 8px 16px;
+  padding: 10px 18px;
   border: 1px solid var(--ink);
   background: #fff;
   color: var(--ink);
@@ -2508,35 +2506,228 @@ body.lightbox-open {
   transition: background var(--t-fast), color var(--t-fast);
 }
 
-.schedule-gate-btn .en {
+.code-cta .en {
   font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 
-.schedule-gate-btn .vi {
-  font-size: 10px;
+.code-cta .vi {
+  font-size: 11px;
   font-style: italic;
   color: var(--muted);
+  transition: color var(--t-fast);
 }
 
-.schedule-gate-btn:hover {
+.code-cta:hover {
   background: var(--ink);
   color: #fff;
 }
 
-.schedule-gate-btn:hover .vi {
+.code-cta:hover .vi {
   color: var(--muted-2);
 }
 
-.schedule-gate-status {
-  font-size: 12px;
-  color: var(--muted);
-  font-style: italic;
+/* --- Password modal ---
+   Backdrop + centered card. Built once by courses.js on the
+   first click and re-used across opens. Uses the same Swiss
+   restraint as the rest of the page: sharp slabs, hairlines,
+   color reserved for state (tranh = ok, bau = err). */
+.code-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
-.schedule-gate-status[data-kind="ok"]  { color: var(--tranh); font-style: normal; }
-.schedule-gate-status[data-kind="err"] { color: var(--bau);   font-style: normal; }
+.code-modal[hidden] {
+  display: none;
+}
+
+.code-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.42);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.code-modal-card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 32px 36px 28px;
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 24px 60px rgba(10, 10, 10, 0.18);
+}
+
+@keyframes code-modal-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.code-modal-card.is-shake {
+  animation: code-modal-shake 280ms cubic-bezier(.4, .1, .2, 1);
+}
+
+.code-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  border-radius: var(--radius);
+  transition: color var(--t-fast);
+}
+
+.code-modal-close:hover {
+  color: var(--ink);
+}
+
+.code-modal-eyebrow {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.code-modal-eyebrow .en {
+  font-weight: 700;
+  color: var(--bau);
+}
+
+.code-modal-eyebrow .vi {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.code-modal-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.code-modal-title .en {
+  display: block;
+}
+
+.code-modal-title .vi {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--muted);
+  margin-top: 4px;
+  letter-spacing: 0;
+}
+
+.code-modal-note {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.code-modal-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  border-radius: var(--radius);
+  letter-spacing: 0.08em;
+}
+
+.code-modal-input:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+
+.code-modal-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.code-modal-submit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 10px 18px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+  border-radius: var(--radius);
+  font: inherit;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.code-modal-submit .en {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.code-modal-submit .vi {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--muted-2);
+}
+
+.code-modal-submit:hover {
+  background: #fff;
+  color: var(--ink);
+}
+
+.code-modal-submit:hover .vi {
+  color: var(--muted);
+}
+
+.code-modal-status {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.code-modal-status[data-kind="ok"]  { color: var(--tranh); }
+.code-modal-status[data-kind="err"] { color: var(--bau); }
+
+body.code-modal-open {
+  overflow: hidden;
+}
 
 .schedule-list {
   list-style: none;
@@ -3228,34 +3419,160 @@ body.lightbox-open {
   }
 }
 
-@media (max-width: 760px) {
-  .photos-hero {
-    padding-top: 40px;
-    padding-bottom: 40px;
-  }
+/* ---------- Photos: mobile/tablet fade slideshow ----------
+   Below 1024px the horizontal accordion is replaced by a single
+   full-frame slideshow. Why:
+     - 44px slivers are well below a tap target
+     - hover doesn't exist on touch — auto-cycle is the only
+       reasonable interaction
+     - horizontal scroll inside the rack fights vertical page scroll
+     - mobile Safari's URL bar plays badly with 100vh layouts
+   The JS keeps toggling .is-active as before; on this breakpoint
+   we stack all items on top of each other with absolute
+   positioning and crossfade between them. The active photo also
+   gets a slow ken-burns zoom so the frame is never completely
+   still. Tap anywhere on the rack to advance to the next photo. */
 
+@media (max-width: 1024px) {
   .photos-accordion {
-    --header-h: 72px;
+    /* dvh first — accounts for the dynamic viewport with mobile
+       browser chrome retracting/expanding; vh is the fallback. */
+    height: clamp(420px, 65vh, 720px);
+    height: clamp(420px, 65dvh, 720px);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    background: #0a0a0a;
+    cursor: pointer;
   }
 
-  .pa-item {
-    width: 36px;
+  .photos-track {
+    position: absolute;
+    inset: 0;
+    display: block;
+    height: 100%;
+    width: 100%;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto;
+    gap: 0;
   }
 
+  .pa-item,
   .pa-item:hover:not(.is-active) {
-    width: 44px;
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0;
+    overflow: hidden;
+    background: #0a0a0a;
+    cursor: pointer;
+    transition: opacity 900ms cubic-bezier(.55, .05, .25, 1);
+    will-change: opacity;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
   }
 
   .pa-item.is-active {
-    width: 90vw;
+    width: 100% !important;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 2;
+  }
+
+  .pa-img {
+    position: absolute !important;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    /* contain so portrait + landscape both show in full with no
+       crop — no native-aspect column trick on mobile, just a
+       universal letterbox against the dark background. */
+    object-fit: contain !important;
+    object-position: center;
+    background: #0a0a0a;
+    filter: none !important;
+    transform: scale(1);
+    transition: none;
+    animation: none;
+  }
+
+  /* Slow ken-burns zoom on the active frame so it's never still. */
+  .pa-item.is-active .pa-img {
+    animation: paKenBurnsMobile 11s ease-in-out 200ms infinite alternate !important;
+  }
+
+  @keyframes paKenBurnsMobile {
+    0%   { transform: scale(1.01); }
+    100% { transform: scale(1.07); }
   }
 
   .pa-cap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
     padding: 18px 18px 22px;
+    display: flex;
+    align-items: flex-end;
     gap: 14px;
+    color: #fff;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0) 100%);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 600ms ease 200ms, transform 600ms ease 200ms;
+    pointer-events: none;
+  }
+
+  .pa-item.is-active .pa-cap {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .pa-num {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 11px;
+    padding-bottom: 2px;
+  }
+
+  .pa-year {
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .pa-text {
-    font-size: 16px;
+    color: #fff;
+    font-size: 15px;
+    line-height: 1.3;
+  }
+
+  /* Rotated edge label is sliver-only — hidden in slideshow mode. */
+  .pa-edge {
+    display: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .photos-hero {
+    padding-top: 36px;
+    padding-bottom: 28px;
+  }
+
+  .photos-accordion {
+    height: clamp(360px, 60vh, 560px);
+    height: clamp(360px, 60dvh, 560px);
+  }
+
+  .pa-cap {
+    padding: 14px 14px 18px;
+    gap: 12px;
+  }
+
+  .pa-text {
+    font-size: 14px;
   }
 }

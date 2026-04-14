@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Courses — Manhattan Academy of Music and Language</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Courses (students) — Manhattan Academy of Music and Language</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="head-common.js"></script>
 </head>
@@ -14,22 +15,22 @@
   <main>
     <section class="courses-hero">
       <p class="eyebrow">
-        <span class="en">Current course</span>
-        <span class="vi">Khoá học hiện tại</span>
+        <span class="en">Student page · current course</span>
+        <span class="vi">Trang học viên · khoá học hiện tại</span>
       </p>
       <h1 class="courses-title">
         <span class="en">Courses</span>
         <span class="vi">Khoá học</span>
       </h1>
       <p class="courses-intro">
-        Class notes and session videos live here. Each week's
-        summary is public — the video links are gated by a
-        course password shared with enrolled students.
+        You're on the student page. Each session has a video link
+        for the sunday and thursday recordings. Bookmark this URL
+        to skip the password next time.
       </p>
       <p class="courses-intro-vi">
-        Ghi chú và video mỗi buổi học ở đây. Tóm tắt mỗi tuần ai
-        cũng xem được — link video cần mật khẩu lớp, chia sẻ
-        riêng cho học viên đã ghi danh.
+        Bạn đang ở trang học viên. Mỗi session có link video cho
+        buổi chủ nhật và thứ năm. Lưu URL này để lần sau khỏi gõ
+        mật khẩu.
       </p>
     </section>
 
@@ -95,21 +96,16 @@
           <span class="vi">Lịch học</span>
         </h2>
         <p class="schedule-note">
-          Each row shows the session topic. Videos are reserved for
-          enrolled students.
+          Click any sun / thu button to open the recording on
+          YouTube. Empty slots mean no recording yet.
         </p>
         <p class="schedule-note-vi">
-          Mỗi dòng hiện chủ đề buổi học. Video chỉ dành cho học viên
-          đã ghi danh.
+          Bấm nút sun / thu để xem bản ghi trên YouTube. Ô trống
+          nghĩa là chưa có recording.
         </p>
-
-        <button type="button" class="code-cta" id="codeOpenBtn">
-          <span class="en">I have a code →</span>
-          <span class="vi">tôi có mật khẩu lớp</span>
-        </button>
       </div>
 
-      <ol class="schedule-list" id="scheduleList" data-mode="public">
+      <ol class="schedule-list" id="scheduleList" data-mode="students">
         <li class="schedule-loading">loading schedule…</li>
       </ol>
     </section>

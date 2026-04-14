@@ -22,14 +22,16 @@
         <span class="vi">Hình ảnh</span>
       </h1>
       <p class="photos-intro">
-        A vertical accordion — one frame expands to the full
-        height of the viewport, the others thin down to a single
-        line. Scroll, or let it roll on its own.
+        Photos from the classroom, in the field, and on stage.
+        On wide screens, a horizontal accordion of slivers; on
+        phones and tablets, a full-frame slideshow. Tap or hover
+        to hold a frame, otherwise let it roll.
       </p>
       <p class="photos-intro-vi">
-        Phong cầm dọc — một khung hình nở ra chiếm trọn chiều
-        cao màn hình, những khung còn lại mỏng lại thành một
-        vệt. Cuộn, hoặc để nó tự cuộn.
+        Hình từ lớp học, điền dã, và sân khấu. Trên màn hình
+        rộng là phong cầm các vệt; trên điện thoại và máy tính
+        bảng là slideshow toàn khung. Chạm hoặc rê chuột để giữ
+        một khung, hoặc để nó tự cuộn.
       </p>
     </section>
 
@@ -177,12 +179,27 @@
         return x;
       }
 
+      // Mobile/tablet breakpoint: under 1024px CSS flattens the
+      // accordion into a fade-crossfade slideshow with stacked
+      // absolutely-positioned items. The horizontal centering
+      // math becomes meaningless there — items overlap, there's
+      // no track to translate. Re-evaluated live so a window
+      // resize or device rotation flips behavior cleanly.
+      const mobileMQ = window.matchMedia("(max-width: 1024px)");
+      const isMobile = () => mobileMQ.matches;
+
       // Center the active item at the viewport horizontal center
       // using the TARGET layout (post-transition state). Both the
       // track transform and the item widths animate over the same
       // 900ms bezier, so the motion stays in sync without needing
-      // to measure interpolated values.
+      // to measure interpolated values. On mobile this is a no-op
+      // because the slideshow doesn't use a translated track.
       function centerItem(n, instant) {
+        if (isMobile()) {
+          // Reset any leftover transform from a desktop session.
+          track.style.transform = "";
+          return;
+        }
         const left = targetOffsetLeft(n, n);
         const w = targetWidth(n, n);
         const targetCenter = left + w / 2;
@@ -217,17 +234,32 @@
 
       function start() {
         stop();
-        timer = setInterval(tick, 4200);
+        // Mobile slideshow gets a slower beat — reading a caption
+        // on a phone takes longer than glancing at a desktop strip.
+        timer = setInterval(tick, isMobile() ? 5200 : 4200);
       }
       function stop() { if (timer) { clearInterval(timer); timer = null; } }
 
       items.forEach((el, k) => {
+        // Hover only matters on desktop. Touch fires synthetic
+        // mouseenter on tap which would jump cycle index awkwardly.
         el.addEventListener("mouseenter", () => {
-          if (userHeld) return;
+          if (isMobile() || userHeld) return;
           paused = true;
           setActive(k);
         });
         el.addEventListener("click", () => {
+          if (isMobile()) {
+            // Tap on the active photo advances; otherwise (a
+            // hidden item received the click somehow) just sync
+            // to that item. Either way, re-arm auto-cycle.
+            const next = (k === i) ? (i + 1) % total : k;
+            setActive(next);
+            paused = true;
+            stop();
+            setTimeout(() => { paused = false; start(); }, 5200);
+            return;
+          }
           userHeld = true;
           setActive(k);
           stop();
@@ -241,9 +273,30 @@
         });
       });
 
+      // On mobile the items are stacked and only the active one
+      // receives pointer events; a tap on the dark background
+      // around a portrait should still advance, so listen on the
+      // rack itself as a fallback.
+      rack.addEventListener("click", (e) => {
+        if (!isMobile()) return;
+        if (e.target.closest(".pa-item")) return; // already handled
+        setActive((i + 1) % total);
+        paused = true;
+        stop();
+        setTimeout(() => { paused = false; start(); }, 5200);
+      });
+
       rack.addEventListener("mouseleave", () => {
         if (userHeld) return;
         paused = false;
+      });
+
+      // When the breakpoint flips (e.g. iPad rotation, browser
+      // resize), rebuild the layout cleanly: clear desktop-only
+      // inline transform, re-center if we're back on desktop.
+      mobileMQ.addEventListener("change", () => {
+        track.style.transform = "";
+        centerItem(i, true);
       });
 
       // Viewport resize → recenter the current active item
@@ -257,11 +310,13 @@
         }, 120);
       });
 
-      // Kick off: preload the first image so we can set its aspect
-      // before the initial activation — otherwise the expanded
-      // column would start at the fallback aspect and animate to
-      // the real aspect once the image arrived, which reads as a
-      // jarring width jump on first paint.
+      // Kick off: preload the first image so we can set its
+      // aspect before the initial activation — otherwise the
+      // expanded column would start at the fallback aspect and
+      // animate to the real aspect once the image arrived, which
+      // reads as a jarring width jump on first paint. (Mobile
+      // doesn't need the aspect for layout, but the preload still
+      // helps the first crossfade arrive without a flash.)
       let kicked = false;
       function kickoff() {
         if (kicked) return;

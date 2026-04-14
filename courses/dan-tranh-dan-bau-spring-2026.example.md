@@ -1,20 +1,17 @@
-<!-- password: your-password-here -->
 <!--
-  This file is the committed schema example for courses.js.
+  Schema example for courses.js. The real file is committed and
+  deployed publicly — both the public page (courses.html) and
+  the student page (courses-students.html) fetch from it, so
+  editing it updates both views at once.
 
-  Copy it to `dan-tranh-dan-bau-spring-2026.md` (same folder,
-  without `.example`) and fill in:
+  Fill in:
 
-  1. The password comment at the very top — any word or phrase,
-     no spaces. Students type it into the Unlock form on the
-     Courses page to reveal the YouTube links.
+  1. The blurb — everything above the table. Free-form markdown:
+     any language, any number of paragraphs, with or without
+     headings. The loader splits on the first table row, so no
+     structural heading is required.
 
-  2. The blurb — everything between the password comment and
-     the first table row. Free-form markdown: any language, any
-     number of paragraphs. The loader splits on the first table
-     row, so no structural heading is required.
-
-  3. The table rows — `topic`, `video_sun`, `video_thu`:
+  2. The table rows — `topic`, `video_sun`, `video_thu`:
        topic      — short summary, lowercase, no trailing period
        video_sun  — youtube id for the sunday recording (not full url)
        video_thu  — youtube id for the thursday recording
@@ -22,9 +19,12 @@
   Class times are hardcoded in courses.js and derived from
   (instrument, day), so there is no time column to fill.
 
-  The real md file is listed in .gitignore so it never lands in
-  the commit history. The site fetches it at runtime from the
-  same path.
+  The course password is NOT in this file — its sha256 hash lives
+  in courses.js (see PASSWORD_HASH). Students type it into the
+  modal that opens from the "I have a code" button on the public
+  page. To rotate the password, recompute the hash with:
+      printf "%s" "newpassword" | shasum -a 256
+  and replace the constant in courses.js.
 -->
 
 Blurb paragraph one — describe what the course covers, who

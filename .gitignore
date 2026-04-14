@@ -1,9 +1,3 @@
 .DS_Store
 .claude/
 References/
-
-# Course content holds the shared unlock password and unlisted
-# YouTube IDs — keep it out of git. The committed .example file
-# documents the schema so the real file can be regenerated.
-courses/*.md
-!courses/*.example.md

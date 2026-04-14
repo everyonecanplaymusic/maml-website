@@ -1,21 +1,40 @@
 /* ============================================================
-   Courses page — loader + password gate
+   Courses page — loader, mode-aware renderer, password modal
    ============================================================
-   Fetches the course markdown file, extracts the shared unlock
-   password from a leading HTML comment, splits the body into a
-   blurb section and a schedule table, groups rows by session,
-   and renders one block per session with both days (sun/thu)
-   visible. Videos stay locked until the correct password is
-   typed. The password lives in a gitignored md file.
+   This script is shared by two pages that render the same md
+   file in different modes:
+
+     courses.html           <ol id="scheduleList" data-mode="public">
+     courses-students.html  <ol id="scheduleList" data-mode="students">
+
+   public mode  → schedule shows topics + locked video slots,
+                  plus a "I have a code" button that opens a
+                  password modal. On correct password the user
+                  is sent to courses-students.html.
+   students mode → schedule shows topics + real YouTube links.
+                   No modal, no button.
+
+   Password handling is honor-system: PASSWORD_HASH lives in this
+   file (so it deploys with the static site), the user's typed
+   password is sha256'd in the browser and compared against the
+   hash. View-source reveals the destination URL but not the
+   plaintext password. This matches the unlisted YouTube
+   semantics — the URL itself is the real "secret".
    ============================================================ */
 (function () {
   const COURSE_MD = "courses/dan-tranh-dan-bau-spring-2026.md";
-  const UNLOCK_KEY = "maml-course-unlocked-sprING26";
+  const STUDENTS_URL = "courses-students.html";
+
+  // sha256("sprING26"). To rotate the password, run
+  //   printf "%s" "newpassword" | shasum -a 256
+  // and replace the constant.
+  const PASSWORD_HASH =
+    "f7e1fb27c7e28a21ab5d2305ffac7afdd7ad18c353af348d5ff72625353c408c";
 
   /* Class times by (instrument, day). Hardcoded here so the
      md file only has to carry session number, dates, topic,
      and video IDs. If the schedule ever changes, edit both
-     this map and the course-meta block in courses.html. */
+     this map and the course-meta block in the html files. */
   const TIMES = {
     "dan-tranh": {
       sun: "10:40 am – 11:30 am",
@@ -38,17 +57,21 @@
 
   const blurbEl    = document.getElementById("courseBlurb");
   const listEl     = document.getElementById("scheduleList");
-  const gateForm   = document.getElementById("scheduleGate");
-  const gateInput  = document.getElementById("schedulePassword");
-  const gateStatus = document.getElementById("scheduleGateStatus");
+  const codeBtn    = document.getElementById("codeOpenBtn"); // public only
 
-  let coursePassword = null;
+  const mode = (listEl && listEl.dataset.mode) || "public";
+  const isStudents = mode === "students";
 
-  function setStatus(text, kind) {
-    gateStatus.textContent = text || "";
-    gateStatus.dataset.kind = kind || "";
+  /* ---------- sha256 helper ---------- */
+  async function sha256(str) {
+    const buf = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
+  /* ---------- date formatting ---------- */
   function formatDate(iso) {
     const parts = iso.split("-");
     if (parts.length !== 3) return iso;
@@ -61,6 +84,7 @@
     return `${m} ${d}`;
   }
 
+  /* ---------- markdown table parser ---------- */
   function parseTable(md) {
     const lines = md.split("\n").map((l) => l.trim());
     const tableLines = [];
@@ -94,9 +118,6 @@
   }
 
   function groupBySession(rows) {
-    /* Collect rows into { [sessionNum]: { sun, thu, instruments: {tranh, bau} } }.
-       Ignore rows with an unknown instrument so the md file can
-       carry comments or typos without crashing the page. */
     const sessions = new Map();
     for (const row of rows) {
       const num = parseInt(row.session, 10);
@@ -122,16 +143,22 @@
     return Array.from(sessions.values()).sort((a, b) => a.num - b.num);
   }
 
+  /* ---------- video slot rendering ---------- */
   function videoSlot(day, videoId) {
-    /* Each slot is a <span> that starts as "—" (no recording yet)
-       or "locked" (recording exists, password not entered), and
-       is rewritten into a watch link by unlockVideos() once the
-       password is correct. data-video-id drives the rewrite. */
     const label = day === "sun" ? "sun" : "thu";
+
     if (!videoId) {
+      // No recording yet — same in both modes.
       return `<span class="video-slot is-pending"><span class="video-day">${label}</span><span class="video-state">—</span></span>`;
     }
-    return `<span class="video-slot is-locked" data-video-id="${videoId}" data-day="${label}"><span class="video-day">${label}</span><span class="video-state">🔒 locked</span></span>`;
+
+    if (isStudents) {
+      // Real link, opens YouTube in a new tab.
+      return `<a class="video-slot is-unlocked" href="https://www.youtube.com/watch?v=${videoId}" target="_blank" rel="noopener"><span class="video-day">${label}</span><span class="video-state">▶ watch</span></a>`;
+    }
+
+    // Public mode: locked badge. Not interactive.
+    return `<span class="video-slot is-locked"><span class="video-day">${label}</span><span class="video-state">🔒 locked</span></span>`;
   }
 
   function renderBlurb(md) {
@@ -198,20 +225,110 @@
     }
   }
 
-  function unlockVideos() {
-    const slots = listEl.querySelectorAll(".video-slot.is-locked[data-video-id]");
-    slots.forEach((slot) => {
-      const id = slot.dataset.videoId;
-      const day = slot.dataset.day;
-      slot.outerHTML = `
-        <a class="video-slot is-unlocked" href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener">
-          <span class="video-day">${day}</span>
-          <span class="video-state">▶ watch</span>
-        </a>
-      `;
+  /* ---------- password modal (public mode only) ---------- */
+  let modal = null;
+
+  function buildModal() {
+    modal = document.createElement("div");
+    modal.className = "code-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-label", "Enter course password");
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="code-modal-backdrop" data-close="1"></div>
+      <form class="code-modal-card" autocomplete="off">
+        <button type="button" class="code-modal-close" data-close="1" aria-label="Close">×</button>
+        <p class="code-modal-eyebrow">
+          <span class="en">For students only</span>
+          <span class="vi">Chỉ dành cho học viên</span>
+        </p>
+        <h2 class="code-modal-title">
+          <span class="en">Enter the course code</span>
+          <span class="vi">Nhập mật khẩu lớp</span>
+        </h2>
+        <p class="code-modal-note">
+          Enrolled students receive the code by email from
+          Mekong NYC. Once you submit it, you'll be sent to the
+          student page where every recorded session is listed
+          with its YouTube link.
+        </p>
+        <input
+          type="password"
+          class="code-modal-input"
+          name="code"
+          placeholder="•••••••"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="code-modal-row">
+          <button type="submit" class="code-modal-submit">
+            <span class="en">Open student page →</span>
+            <span class="vi">vào trang học viên</span>
+          </button>
+          <span class="code-modal-status" data-status></span>
+        </div>
+      </form>
+    `;
+    document.body.appendChild(modal);
+
+    const form = modal.querySelector("form");
+    const input = modal.querySelector(".code-modal-input");
+    const status = modal.querySelector("[data-status]");
+
+    modal.addEventListener("click", (e) => {
+      if (e.target.dataset.close === "1") closeModal();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.hidden && e.key === "Escape") closeModal();
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const typed = input.value.trim();
+      if (!typed) return;
+      status.textContent = "";
+      status.dataset.kind = "";
+      const hash = await sha256(typed);
+      if (hash === PASSWORD_HASH) {
+        status.dataset.kind = "ok";
+        status.textContent = "ok →";
+        // Brief delay so the user sees the success state.
+        setTimeout(() => {
+          window.location.href = STUDENTS_URL;
+        }, 200);
+      } else {
+        status.dataset.kind = "err";
+        status.textContent = "wrong code";
+        modal.querySelector(".code-modal-card").classList.remove("is-shake");
+        // Force reflow so the animation restarts on rapid retries.
+        // eslint-disable-next-line no-unused-expressions
+        modal.querySelector(".code-modal-card").offsetWidth;
+        modal.querySelector(".code-modal-card").classList.add("is-shake");
+        input.select();
+      }
     });
   }
 
+  function openModal() {
+    if (!modal) buildModal();
+    modal.hidden = false;
+    document.body.classList.add("code-modal-open");
+    const input = modal.querySelector(".code-modal-input");
+    input.value = "";
+    const status = modal.querySelector("[data-status]");
+    status.textContent = "";
+    status.dataset.kind = "";
+    setTimeout(() => input.focus(), 0);
+  }
+
+  function closeModal() {
+    if (!modal) return;
+    modal.hidden = true;
+    document.body.classList.remove("code-modal-open");
+  }
+
+  /* ---------- main load ---------- */
   async function load() {
     let text;
     try {
@@ -226,17 +343,11 @@
       return;
     }
 
-    const passMatch = text.match(
-      /<!--\s*password\s*:\s*([^\s>]+)\s*-->/i
-    );
-    coursePassword = passMatch ? passMatch[1] : null;
-
     const body = text.replace(/<!--[\s\S]*?-->/g, "").trim();
 
-    /* The schedule section is identified by the first markdown
-       table in the file — not by any heading. This lets the
-       blurb above be free-form: any language, any number of
-       paragraphs, with or without headings. */
+    /* Split blurb / schedule on the first table row, so the
+       blurb above can be free-form: any language, any number
+       of paragraphs, with or without headings. */
     const tableIdx = body.search(/^\|.*\|\s*$/m);
     const blurbMd = tableIdx >= 0 ? body.slice(0, tableIdx) : body;
     const scheduleMd = tableIdx >= 0 ? body.slice(tableIdx) : "";
@@ -246,29 +357,11 @@
     const rows = parseTable(scheduleMd);
     const sessions = groupBySession(rows);
     renderSessions(sessions);
-
-    if (sessionStorage.getItem(UNLOCK_KEY) === "1") {
-      unlockVideos();
-      setStatus("unlocked", "ok");
-    }
   }
 
-  gateForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const typed = gateInput.value.trim();
-    if (!coursePassword) {
-      setStatus("no password set", "err");
-      return;
-    }
-    if (typed === coursePassword) {
-      sessionStorage.setItem(UNLOCK_KEY, "1");
-      unlockVideos();
-      setStatus("unlocked", "ok");
-      gateInput.value = "";
-    } else {
-      setStatus("wrong password", "err");
-    }
-  });
+  if (codeBtn) {
+    codeBtn.addEventListener("click", openModal);
+  }
 
   load();
 })();
