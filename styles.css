@@ -2771,7 +2771,25 @@ body.lightbox-open {
    The flip animation (rotate .mod-word-active) still works
    because that's internal to the card, independent of the
    card's own 3D transform. */
-@media (max-width: 1024px) {
+@media (max-width: 1280px) {
+  /* Prevent the horizontal card row from pushing the whole page
+     wider than the viewport. Without this, a flex container with
+     14×300px children = 4200px of intrinsic width can leak out
+     and force body-level horizontal scroll, which is exactly the
+     "cards scattered everywhere, taps don't stick, jumps like a
+     frog" symptom we saw. overflow-x: clip on body + max-width:
+     100vw on library together guarantee the scroll is internal
+     to the library only. */
+  html, body {
+    overflow-x: clip;
+    max-width: 100vw;
+  }
+
+  main, .hero, .tac-stage {
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
   .tac-stage {
     align-items: stretch;
   }
@@ -2779,13 +2797,16 @@ body.lightbox-open {
   .tac-library {
     /* flatten the 3D stage */
     perspective: none;
-    max-width: 100%;
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
     height: auto;
     min-height: 0;
 
     /* horizontal scroll-snap row */
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
     gap: 14px;
     padding: 24px 20px 32px;
     overflow-x: auto;
