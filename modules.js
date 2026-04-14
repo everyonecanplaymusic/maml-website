@@ -246,21 +246,22 @@ window.MODULES = [
     bank: window.AN_BONG_BANK_DERIVED,
   },
 
-  // ---------- ADD "đi" ----------
+  // ---------- ADD "dịp" ----------
   // Bank from BANK_AN_LE (data/addrem-an-le.js).
-  // 'Ăn' that means ATTENDING an event — ăn Tết, ăn cưới, ăn
-  // giỗ, ăn đầy tháng. The mouth IS involved (there's a feast),
-  // but the verb really packages the whole occasion: visit,
-  // celebrate, worship, rest. English splits into celebrate /
-  // attend / observe; Vietnamese keeps it under one 'ăn'.
+  // 'Ăn' that packages an entire occasion — ăn Tết, ăn cưới,
+  // ăn giỗ, ăn đầy tháng. The mouth IS involved (there's a
+  // feast), but the verb really wraps the whole dịp: visit,
+  // celebrate, worship, rest, eat. English splits into
+  // celebrate / attend / observe; Vietnamese keeps it under
+  // one 'ăn'.
   {
     id:    "add-an-le",
     type:  "add",
     slot:  "an-le",
-    target: "đi",
+    target: "dịp",
     role: {
-      en: "'ăn' as attending an event",
-      vi: "'ăn' nghĩa là dự, là đi",
+      en: "'ăn' wrapping a whole occasion",
+      vi: "'ăn' gói cả một dịp",
     },
     bank: window.AN_LE_BANK_DERIVED,
   },

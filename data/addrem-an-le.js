@@ -22,8 +22,8 @@ const BANK_AN_LE = {
   note_en: "'Ăn' packages an entire cultural event — visiting, resting, worshipping — not just stuffing food into the belly. Ăn Tết, ăn cưới, ăn giỗ, ăn đầy tháng: each phrase is a milestone of a Vietnamese life.",
   items: [
     // ---- Sự kiện & văn hoá ----
-    { vi: "ăn tết",
-      render: ["tôi ăn", "+tết"],
+    { vi: "ăn Tết",
+      render: ["tôi ăn", "+Tết"],
       en: "to celebrate Lunar New Year",
       nuance_vi: "Bao gồm chơi, thăm hỏi, nghỉ ngơi — không chỉ nhét bánh chưng vào bụng.",
       nuance_en: "Encompasses visiting, resting, celebrating — not just stuffing sticky rice cake." },

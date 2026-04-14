@@ -85,11 +85,11 @@ const BANK_KINSHIP = {
     { vi: "út",      nuance: "Người nhỏ nhất trong gia đình." },
     // Classifier (đặt trước tên)
     { vi: "thằng",   nuance:    "Classifier thân mật/thô cho con trai. 'Thằng Tèo ăn cơm chưa?'",
-                     nuance_en: "Familiar/rough classifier for boys." },
-    { vi: "đại ca",  nuance_vi: "Anh lớn. Xã hội đen hoặc kính trọng. 'Mời đại ca ăn tối.'",
-                     nuance_en: "Big brother. Gang boss or respectful address. 'Please, boss, join us for dinner.'" },
+                     nuance_en: "familiar/rough classifier for boys." },
+    { vi: "đại ca",  nuance_vi: "anh lớn. Xã hội đen hoặc kính trọng. 'Mời đại ca ăn tối.'",
+                     nuance_en: "big brother. Gang boss or respectful address. 'Please, boss, join us for dinner.'" },
     { vi: "cu",      nuance:    "Classifier thân mật cho bé trai nhỏ. 'Cu Tèo ăn cơm chưa?'",
-                     nuance_en: "Affectionate classifier for little boys." },
+                     nuance_en: "affectionate classifier for little boys." },
   ],
 
   generations: [

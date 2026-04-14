@@ -21,7 +21,7 @@ const BANK_AN = {
   items: [
     // ----- Verb gốc -----
     { vi: "ăn",            nuance:    "Verb gốc. Mở rộng sang mọi trường nghĩa: ăn cưới, ăn đòn, ăn hối lộ. Không ngôn ngữ nào có verb 'eat' bao sân như tiếng Việt.",
-                           nuance_en: "The root verb. Expands into every semantic field: weddings, beatings, bribes. No language stretches 'eat' this far." },
+                           nuance_en: "the root verb. Expands into every semantic field: weddings, beatings, bribes. No language stretches 'eat' this far." },
 
     // ----- Thanh lịch / kính trọng -----
     { vi: "dùng",          nuance: "Trang trọng, thanh lịch. Thường đi với 'bữa' hơn 'cơm'. CŨNG nghĩa chung 'use'." },
@@ -59,7 +59,7 @@ const BANK_AN = {
     { vi: "nhai",          nuance: "Tập trung vào hàm. ẨN DỤ: 'nhai không vô' = không chấp nhận lý do.", multi: ["sinh học", "ẩn dụ tâm lý"] },
     { vi: "nuốt",          nuance: "Tập trung vào cổ họng. ẨN DỤ: 'nuốt cục tức', 'nuốt không nổi' = cam chịu.", multi: ["sinh học", "ẩn dụ tâm lý"] },
     { vi: "nhơi",          nuance:    "Nhai lại, chậm rãi, uể oải. Như trâu nhơi cỏ. Ăn không hứng thú.",
-                           nuance_en: "To chew cud — listlessly, like a buffalo. Eating without appetite." },
+                           nuance_en: "to chew cud — listlessly, like a buffalo. Eating without appetite." },
   ],
 };
 

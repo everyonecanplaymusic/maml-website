@@ -145,14 +145,14 @@ const BANK_QUESTION = {
       nuance_en: "Asking a past time. Fills the slot in place, never fronted." },
 
     { vi: "chừng nào",
-      render: ["tôi ăn cơm", "+chừng nào?"],
-      nuance_vi: "Hỏi thời điểm tương lai. Nam Bộ / Trung Bộ.",
-      nuance_en: "Asking a future time. Central / Southern." },
+      render: ["+chừng nào", "tôi ăn cơm?"],
+      nuance_vi: "Hỏi thời điểm tương lai. Nam Bộ / Trung Bộ. Phải đưa lên đầu câu — để cuối câu thì đọc thành rhetorical.",
+      nuance_en: "Asking a future time. Central / Southern. Must front — leaving it at the end turns it rhetorical." },
 
     { vi: "bao giờ",
-      render: ["tôi ăn cơm", "+bao giờ?"],
-      nuance_vi: "Hỏi thời điểm tương lai. Bắc Bộ.",
-      nuance_en: "Asking a future time. Northern." },
+      render: ["+bao giờ", "tôi ăn cơm?"],
+      nuance_vi: "Hỏi thời điểm tương lai. Bắc Bộ. Phải đưa lên đầu câu — 'tôi ăn cơm bao giờ?' đọc thành 'khi nào mới ăn nổi'.",
+      nuance_en: "Asking a future time. Northern. Must front — at sentence-end it reads as 'when will I ever get to…'." },
 
     { vi: "với ai",
       render: ["tôi ăn cơm", "+với ai?"],

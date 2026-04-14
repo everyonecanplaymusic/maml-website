@@ -122,6 +122,50 @@
     return positions;
   }
 
+  // ----- Display lowercase transform -----
+  // RULE: everything rendered on a card is lowercase except
+  // actual proper nouns. The cards are fragments, not complete
+  // sentences, so capitalizing them lies about their status.
+  // We apply this at display time so the data files stay
+  // readable in their natural form — authors don't have to
+  // manually lowercase every nuance_vi / nuance_en they write,
+  // and kinship rank combos ("Bác Cả", "Anh Hai") come out of
+  // their generator normally. The preserve list below restores
+  // a handful of real proper nouns after the lowercase pass.
+  // See CLAUDE.md "Content rules (hardcoded)".
+  const PROPER_NOUNS = [
+    "Tết",
+    "Chí Phèo",
+    "Tèo",
+    "Hertz",
+    "MAML",
+    "Bắc Bộ", "Trung Bộ", "Nam Bộ",
+  ];
+  const PROPER_LC_MAP = PROPER_NOUNS.map(p => [p.toLowerCase(), p]);
+
+  // Southern kinship-rank compound: "dì Tám", "anh Hai", "bác
+  // Cả". The kinship role word stays lowercase (dì, anh, bác),
+  // but the rank is a proper-name suffix and stays capitalized
+  // — "dì Tám" is literally how she's addressed, like a name.
+  // Also catches the same rank when it appears in quotes
+  // ("thứ 'Hai'"), where it's a referential name.
+  const KIN_PREFIX = "ông|bà|bác|chú|cô|dì|cậu|mợ|thím|dượng|anh|chị|má|ba|cha|o";
+  const RANK_WORD  = "cả|hai|ba|tư|năm|sáu|bảy|tám|chín|mười|út";
+  const KIN_RANK_RE    = new RegExp(`(^|[^\\p{L}])(${KIN_PREFIX}) (${RANK_WORD})(?![\\p{L}])`, "gu");
+  const QUOTED_RANK_RE = new RegExp(`(["'\`])(${RANK_WORD})(["'\`])`, "g");
+  const cap = w => w.charAt(0).toUpperCase() + w.slice(1);
+
+  function lcDisplay(s) {
+    if (typeof s !== "string" || !s) return s;
+    let out = s.toLowerCase();
+    for (const [lc, pn] of PROPER_LC_MAP) {
+      if (out.includes(lc)) out = out.split(lc).join(pn);
+    }
+    out = out.replace(KIN_RANK_RE, (_, pre, kin, rank) => `${pre}${kin} ${cap(rank)}`);
+    out = out.replace(QUOTED_RANK_RE, (_, q1, rank, q2) => `${q1}${cap(rank)}${q2}`);
+    return out;
+  }
+
   // ----- Segment rendering helper -----
   // ADD cards describe each bank entry as an array of segments:
   //   [{ text: "tôi",    hit: false },
@@ -136,7 +180,7 @@
     for (const seg of segments) {
       const span = document.createElement("span");
       span.className = seg.hit ? "seg-hit" : "seg-mute";
-      span.textContent = seg.text;
+      span.textContent = lcDisplay(seg.text);
       el.appendChild(span);
     }
   }
@@ -150,12 +194,12 @@
   // not the generic baseline.
   function applyEntry(card, entry) {
     if (card.module.type === "swap") {
-      card.wordEl.textContent = entry.word;
+      card.wordEl.textContent = lcDisplay(entry.word);
     } else if (card.module.type === "add") {
       renderSegments(card.wordEl, entry.segments);
     }
-    card.footEnEl.textContent = entry.en;
-    card.footViEl.textContent = entry.vi;
+    card.footEnEl.textContent = lcDisplay(entry.en);
+    card.footViEl.textContent = lcDisplay(entry.vi);
     card.current = entry;
   }
 
@@ -178,12 +222,12 @@
       node.dataset.type = module.type;
 
       node.querySelector(".mod-kind").textContent   = "SWAP";
-      node.querySelector(".mod-target").textContent = `"${module.target}"`;
-      node.querySelector(".mod-left").textContent   = module.sentence[0];
-      node.querySelector(".mod-word-active").textContent = module.sentence[1];
-      node.querySelector(".mod-right").textContent  = module.sentence[2];
-      node.querySelector(".mod-foot-en").textContent = module.role.en;
-      node.querySelector(".mod-foot-vi").textContent = module.role.vi;
+      node.querySelector(".mod-target").textContent = `"${lcDisplay(module.target)}"`;
+      node.querySelector(".mod-left").textContent   = lcDisplay(module.sentence[0]);
+      node.querySelector(".mod-word-active").textContent = lcDisplay(module.sentence[1]);
+      node.querySelector(".mod-right").textContent  = lcDisplay(module.sentence[2]);
+      node.querySelector(".mod-foot-en").textContent = lcDisplay(module.role.en);
+      node.querySelector(".mod-foot-vi").textContent = lcDisplay(module.role.vi);
 
       return node;
     },
@@ -197,10 +241,10 @@
       const first = module.bank[0];         // canonical: usually the bare sentence
 
       node.querySelector(".mod-kind").textContent   = "ADD";
-      node.querySelector(".mod-target").textContent = `"${module.target}"`;
+      node.querySelector(".mod-target").textContent = `"${lcDisplay(module.target)}"`;
       renderSegments(node.querySelector(".mod-word-active"), first.segments);
-      node.querySelector(".mod-foot-en").textContent = module.role.en;
-      node.querySelector(".mod-foot-vi").textContent = module.role.vi;
+      node.querySelector(".mod-foot-en").textContent = lcDisplay(module.role.en);
+      node.querySelector(".mod-foot-vi").textContent = lcDisplay(module.role.vi);
 
       return node;
     },
@@ -261,13 +305,13 @@
         card.current = entry;
 
         setTimeout(() => {
-          el.textContent = entry.word;
+          el.textContent = lcDisplay(entry.word);
           el.classList.remove("flip-out");
           void el.offsetWidth;
           el.classList.add("flip-in");
 
-          card.footEnEl.textContent = entry.en;
-          card.footViEl.textContent = entry.vi;
+          card.footEnEl.textContent = lcDisplay(entry.en);
+          card.footViEl.textContent = lcDisplay(entry.vi);
 
           setTimeout(() => { card.flipping = false; }, FLIP_HALF_MS);
         }, FLIP_HALF_MS);
@@ -311,8 +355,8 @@
           void el.offsetWidth;
           el.classList.add("flip-in");
 
-          card.footEnEl.textContent = entry.en;
-          card.footViEl.textContent = entry.vi;
+          card.footEnEl.textContent = lcDisplay(entry.en);
+          card.footViEl.textContent = lcDisplay(entry.vi);
 
           setTimeout(() => { card.flipping = false; }, FLIP_HALF_MS);
         }, FLIP_HALF_MS);

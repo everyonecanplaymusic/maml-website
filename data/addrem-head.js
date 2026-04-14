@@ -60,32 +60,32 @@ const BANK_HEAD = {
       nuance_en: "Pointing the listener's gaze at the scene. 'Look, see — he's eating.'" },
 
     { vi: "trời ơi",
-      render: ["+trời ơi,", "tôi ăn cơm!"],
+      render: ["+trời ơi,", "tôi ăn cơm"],
       nuance_vi: "Bất ngờ lớn, kèm xót xa hoặc bực bội.",
       nuance_en: "Big surprise, laced with pity or frustration. 'Oh heavens!'" },
 
     { vi: "chết cha",
-      render: ["+chết cha,", "tôi ăn cơm!"],
+      render: ["+chết cha,", "tôi ăn cơm"],
       nuance_vi: "Phát hiện lỗi lầm khẩn cấp. 'Chết cha, quên mất!'",
       nuance_en: "Catching a mistake in the moment. 'Oh no — I forgot!'" },
 
     { vi: "á",
-      render: ["+á,", "tôi ăn cơm!"],
+      render: ["+á,", "tôi ăn cơm"],
       nuance_vi: "Phản xạ vật lý — nóng, đau, giật mình.",
       nuance_en: "Physical reflex — burnt tongue, sudden pain, startle." },
 
     { vi: "chèn ơi",
-      render: ["+chèn ơi,", "tôi ăn cơm!"],
+      render: ["+chèn ơi,", "tôi ăn cơm"],
       nuance_vi: "Thán từ Nam Bộ — tiếc, than, hoặc bất ngờ nhẹ.",
       nuance_en: "Southern exclamation — regret, lament, or mild surprise." },
 
     { vi: "tiên sư",
-      render: ["+tiên sư,", "tôi ăn cơm!"],
+      render: ["+tiên sư,", "tôi ăn cơm"],
       nuance_vi: "Chửi nhẹ, mắng đầu câu. Bắc Bộ, đời thường.",
       nuance_en: "Light curse-opener — 'dammit.' Northern everyday speech." },
 
     { vi: "tía má nó",
-      render: ["+tía má nó,", "tôi ăn cơm!"],
+      render: ["+tía má nó,", "tôi ăn cơm"],
       nuance_vi: "Thán từ Nam Bộ — bất ngờ thân tình, không phải chửi.",
       nuance_en: "Southern exclamation of friendly shock — not actually cursing." },
 

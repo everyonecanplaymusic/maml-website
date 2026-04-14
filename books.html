@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Books — Manhattan Academy of Music and Language</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,600;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/png" href="maml-logo.png" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <img src="maml-logo.png" alt="MAML logo" class="brand-logo" />
+      <span class="brand-name">
+        <span class="brand-en">Manhattan Academy of Music and Language</span>
+        <span class="brand-vi">Học Viện Âm Nhạc &amp; Ngôn Ngữ Manhattan</span>
+      </span>
+    </a>
+    <nav class="topnav">
+      <a href="index.html#mission">Mission</a>
+      <a href="index.html#publications">Publications</a>
+      <a href="index.html#apps">Apps</a>
+      <a href="books.html" class="is-active">Books</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="books-hero">
+      <p class="eyebrow">
+        <span class="en">Books from the Academy</span>
+        <span class="vi">Sách của học viện</span>
+      </p>
+      <h1 class="books-title">
+        <span class="en">Books</span>
+        <span class="vi">Sách</span>
+      </h1>
+      <p class="books-intro">
+        Turn a few pages to get a feel. The preview is small on
+        purpose — enough to see the design and decide, not enough
+        to read cover to cover. For the full book in clear print,
+        order a copy.
+      </p>
+      <p class="books-intro-vi">
+        Lật vài trang để cảm nhận. Bản xem trước cố ý nhỏ — đủ
+        để thấy thiết kế và quyết định, không đủ để đọc trọn
+        quyển. Muốn xem rõ, xin đặt mua sách.
+      </p>
+    </section>
+
+    <section class="books-section">
+      <article class="book-entry">
+        <div class="book-preview">
+          <div class="flipbook" data-book="dantranh">
+            <img
+              id="img-dantranh"
+              class="flipbook-img"
+              src="books/dan-tranh/1.jpg"
+              alt="Đàn Tranh book preview"
+              draggable="false"
+              oncontextmenu="return false"
+            />
+            <div class="flipbook-guard" aria-hidden="true"></div>
+          </div>
+          <div class="flip-controls">
+            <button type="button" class="flip-btn" onclick="flipPrev('dantranh')" aria-label="Previous page">‹</button>
+            <span class="flip-counter" id="counter-dantranh">1 / 51</span>
+            <button type="button" class="flip-btn" onclick="flipNext('dantranh')" aria-label="Next page">›</button>
+          </div>
+          <p class="flip-note">
+            <span class="en">preview only — small size, no zoom</span>
+            <span class="vi">bản xem trước — cỡ nhỏ, không phóng to</span>
+          </p>
+        </div>
+        <div class="book-info">
+          <div class="book-kind">
+            <span class="en">2025 · Educational · Vietnamese Zither</span>
+            <span class="vi">Sách giáo khoa · Đàn dây Việt Nam</span>
+          </div>
+          <h2 class="book-title">
+            Introducing <span class="dieu">Đàn Tranh</span> Techniques &amp; Expressions
+          </h2>
+          <p class="book-authors">Phan Gia Anh-Thư, Tô Thùy Kim, Ngô Thanh Nhàn</p>
+          <p class="book-body">
+            A fresh approach to learning <span class="dieu">đàn tranh</span>
+            with technique-focused illustrations, the first published
+            <span class="dieu">đàn tranh</span> tablature system, and video
+            tutorials for three folk songs from the northern, central,
+            and southern regions. Drawn from more than a decade of
+            community classes at the academy.
+          </p>
+          <p class="book-body-vi">
+            Một cách tiếp cận mới với <span class="dieu">đàn tranh</span> —
+            hình minh họa theo kỹ thuật, hệ thống tablature
+            <span class="dieu">đàn tranh</span> in lần đầu, và video hướng
+            dẫn ba bài dân ca ba miền. Đúc kết từ hơn mười năm dạy
+            cộng đồng của học viện.
+          </p>
+          <a class="book-buy" href="https://a.co/d/a2TJLsR" target="_blank" rel="noopener">
+            <span class="en">Order on Amazon</span>
+            <span class="vi">Đặt mua trên Amazon</span>
+          </a>
+        </div>
+      </article>
+
+      <article class="book-entry">
+        <div class="book-preview">
+          <div class="flipbook" data-book="echo">
+            <img
+              id="img-echo"
+              class="flipbook-img"
+              src="books/echos-melody/1.jpg"
+              alt="Echo's Melody book preview"
+              draggable="false"
+              oncontextmenu="return false"
+            />
+            <div class="flipbook-guard" aria-hidden="true"></div>
+          </div>
+          <div class="flip-controls">
+            <button type="button" class="flip-btn" onclick="flipPrev('echo')" aria-label="Previous page">‹</button>
+            <span class="flip-counter" id="counter-echo">1 / 33</span>
+            <button type="button" class="flip-btn" onclick="flipNext('echo')" aria-label="Next page">›</button>
+          </div>
+          <p class="flip-note">
+            <span class="en">preview only — small size, no zoom</span>
+            <span class="vi">bản xem trước — cỡ nhỏ, không phóng to</span>
+          </p>
+        </div>
+        <div class="book-info">
+          <div class="book-kind">
+            <span class="en">Children's Picture Book · Ages 4–8</span>
+            <span class="vi">Truyện tranh thiếu nhi · 4–8 tuổi</span>
+          </div>
+          <h2 class="book-title">
+            Echo's Melody: Mischief or Miracles?
+          </h2>
+          <p class="book-authors">Phan Gia Anh-Thư &amp; Jennifer Ku</p>
+          <p class="book-body">
+            Echo is a mischievous parrot who can imitate any sound she
+            hears, from a chainsaw to a lullaby. A heartfelt cry changes
+            the way she uses her gift, and kindness turns mimicry into
+            something that can heal and be remembered.
+          </p>
+          <p class="book-body-vi">
+            Echo là chú vẹt tinh nghịch, nghe gì cũng bắt chước được
+            — từ tiếng máy cưa đến câu ru. Một tiếng khóc chân thành
+            làm cô thay đổi cách dùng tài năng của mình: sự tử tế
+            biến bắt chước thành điều có thể chữa lành và được
+            ghi nhớ.
+          </p>
+          <a class="book-buy" href="https://a.co/d/eb8nn5O" target="_blank" rel="noopener">
+            <span class="en">Order on Amazon</span>
+            <span class="vi">Đặt mua trên Amazon</span>
+          </a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="en">© 2026 Manhattan Academy of Music and Language · A non-profit organization</span>
+    <span class="vi">Học Viện Âm Nhạc &amp; Ngôn Ngữ Manhattan · Một tổ chức phi lợi nhuận</span>
+  </footer>
+
+  <script>
+    (function () {
+      const books = {
+        dantranh: { total: 51, current: 1, path: "books/dan-tranh/" },
+        echo:     { total: 33, current: 1, path: "books/echos-melody/" },
+      };
+
+      function render(id) {
+        const b = books[id];
+        document.getElementById("img-" + id).src = b.path + b.current + ".jpg";
+        document.getElementById("counter-" + id).textContent = b.current + " / " + b.total;
+      }
+
+      window.flipNext = function (id) {
+        const b = books[id];
+        if (b.current < b.total) { b.current++; render(id); }
+      };
+      window.flipPrev = function (id) {
+        const b = books[id];
+        if (b.current > 1) { b.current--; render(id); }
+      };
+
+      // Preload a couple of pages ahead so paging feels instant.
+      function preloadAhead(id, n) {
+        const b = books[id];
+        for (let i = 1; i <= Math.min(n, b.total); i++) {
+          const img = new Image();
+          img.src = b.path + i + ".jpg";
+        }
+      }
+      preloadAhead("dantranh", 4);
+      preloadAhead("echo", 4);
+    })();
+  </script>
+</body>
+</html>

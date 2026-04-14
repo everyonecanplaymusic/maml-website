@@ -286,6 +286,55 @@ mousing out of the library (USER mode only).
 - **Full-width breakout** for the trailer area. The `<main>` element
   has no max-width; `.pillars` and `.footer` set their own.
 
+## Content rules (hardcoded)
+
+Rules about what appears inside a card's `render` array. These are
+**not** style preferences — they're locked in because every time
+we've drifted, the shelf has ended up inconsistent and we've had
+to sweep all ten banks to fix it. Don't undo any of this.
+
+- **Lowercase by default. No capital at the start of a rendered
+  sentence.** Write `tôi ăn cơm`, never `Tôi ăn cơm`. The cards
+  are fragments, not complete sentences — treating them like
+  sentences is a lie and forces an arbitrary reading tone.
+- **No ending `.` or `!`.** Ever. Emotion and tone live in the
+  bank's `nuance_vi/nuance_en` fields, not in visible
+  punctuation on the word itself. Forcing `!` onto `trời ơi`
+  locks in one emotional reading; leaving it off lets the card
+  carry all of them. If you find yourself adding `!` to feel
+  the intensity, that intensity belongs in the nuance, not the
+  render.
+- **`?` is the ONLY allowed ending punctuation.** Questions
+  must carry `?` because rising intonation isn't visible on the
+  page — without it a learner can't tell a question from a
+  statement. Every item in the question bank bakes `?` into
+  its final hit segment. This is the single exception to the
+  "no ending punctuation" rule.
+- **Commas INSIDE a rendered sentence are allowed.** They're
+  structural — a pause after an opener like `dạ,` or `ê,` or
+  `ủa,`. Bake them into the hit segment (`"+dạ,"`), not as a
+  separate segment. Commas are not decorative, they mark a
+  real pause in speech.
+- **Proper nouns stay capitalized.** `Tết`, `Bắc Bộ`, `Nam Bộ`,
+  `Chí Phèo`, etc. — everywhere they appear. Everything else
+  stays lowercase, including proper English words like
+  `vietnamese`, `southern`, `northern` when they're just
+  dialect regions, not formal proper nouns.
+- **The rule applies to EVERY rendered field on the card, not
+  just the `render` array.** That includes `nuance_vi` and
+  `nuance_en` (shown in the card footer), the module's
+  `role.en` / `role.vi` (shown as meta), and the bank's
+  `note`/`note_en` if they ever surface. Lowercase first
+  letter, no ending `.`/`!`, no ALL-CAPS emphasis (`DUAL:`,
+  `OVERLAP:`, `WITHIN` — rewrite without caps).
+  - The `name`, `vi`, `en` short-label fields that DON'T render
+    on the card (internal reference only) may stay however the
+    corpus author wrote them — no need to sweep.
+- **When adding a new bank**, audit every `render` before
+  committing: run through the list and confirm lowercase,
+  no `.`/`!`, `?` only on questions, proper nouns capitalized.
+  It's faster to check once than to sweep ten files later.
+
 ## Performance rules (hardcoded)
 
 These rules aren't optional polish — breaking them makes the shelf

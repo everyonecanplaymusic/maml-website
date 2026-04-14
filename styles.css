@@ -632,7 +632,7 @@ main {
   margin: 0 auto;
   padding: 0 var(--pad) clamp(72px, 10vw, 140px);
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -688,6 +688,529 @@ main {
   max-width: 52ch;
 }
 
+/* ---------- Genre / instrument emphasis ----------
+   For Vietnamese musical genres and instruments (hát ru, vọng cổ,
+   đàn tranh, hát xẩm, lý con sáo). Italic + bold + a marker-pen
+   highlight underline. Color used here is intentional editorial
+   punctuation, not a wash — only these named terms carry it. */
+.dieu {
+  font-style: italic;
+  font-weight: 700;
+  color: var(--ink);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 62%,
+    rgba(232, 178, 56, 0.32) 62%,
+    rgba(232, 178, 56, 0.32) 92%,
+    transparent 92%
+  );
+  padding: 0 2px;
+  border-radius: 1px;
+}
+
+.pillar-body-vi .dieu,
+.pub-meta .dieu {
+  font-weight: 600;
+}
+
+/* ---------- Publications ----------
+   A long-form research list. Same Swiss/Japanese restraint as
+   pillars: sharp white slabs, 1px hairline rules between items,
+   year as a thin tag in the gutter, EN primary VI secondary.
+   No rounded corners, no hover lift, no fill. */
+.publications {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: clamp(64px, 8vw, 120px) var(--pad);
+  border-bottom: 1px solid var(--line);
+}
+
+.publications-head {
+  margin: 0 0 clamp(36px, 4vw, 56px);
+  max-width: 64ch;
+}
+
+.publications-head h2 {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 20px;
+  line-height: 1.1;
+}
+
+.publications-head h2 .en {
+  font-weight: 800;
+  font-size: clamp(26px, 2.6vw, 34px);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.publications-head h2 .vi {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 6px;
+}
+
+.publications-intro {
+  margin: 0 0 6px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.publications-intro-vi {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.pub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.pub-item {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: clamp(20px, 3vw, 40px);
+  padding: clamp(20px, 2.4vw, 28px) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pub-year {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding-top: 3px;
+}
+
+.pub-body {
+  min-width: 0;
+}
+
+.pub-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 6px;
+  max-width: 72ch;
+}
+
+.pub-meta {
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 72ch;
+}
+
+/* ---------- Apps ----------
+   Same Swiss/Japanese restraint as publications: sharp white slabs,
+   1px hairline rules between items, two-digit index in the gutter,
+   title as a plain text link with a 1px underline on hover. No
+   pills, no fill, no halos. Coming-soon items are non-interactive
+   and muted — same row, marked by .is-soon. */
+.apps {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: clamp(64px, 8vw, 120px) var(--pad);
+  border-bottom: 1px solid var(--line);
+}
+
+.apps-head {
+  margin: 0 0 clamp(36px, 4vw, 56px);
+  max-width: 64ch;
+}
+
+.apps-head h2 {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 20px;
+  line-height: 1.1;
+}
+
+.apps-head h2 .en {
+  font-weight: 800;
+  font-size: clamp(26px, 2.6vw, 34px);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.apps-head h2 .vi {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 6px;
+}
+
+.apps-intro {
+  margin: 0 0 6px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.apps-intro-vi {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.app-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.app-item {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: clamp(20px, 3vw, 40px);
+  padding: clamp(20px, 2.4vw, 28px) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-num {
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding-top: 4px;
+}
+
+.app-body {
+  min-width: 0;
+}
+
+a.app-title,
+span.app-title {
+  display: inline;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+
+a.app-title:hover {
+  border-bottom-color: var(--ink);
+}
+
+.app-meta {
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 6px;
+  max-width: 72ch;
+}
+
+.app-item.is-soon .app-title {
+  color: var(--muted-2);
+  font-weight: 600;
+}
+
+.app-item.is-soon .app-num {
+  color: var(--muted-2);
+}
+
+/* ---------- Books page ----------
+   Same Swiss/Japanese restraint as the rest of the site. Sharp slabs,
+   thin hairlines, EN primary VI secondary. The flipbook preview is
+   intentionally small — enough to feel the design, not enough to
+   read cover to cover. No zoom, no right-click save, no drag.
+   For the full book in clear print, order a copy. */
+.topnav a.is-active {
+  color: var(--ink);
+}
+.topnav a.is-active::after {
+  transform: scaleX(1);
+}
+
+.books-hero {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: clamp(48px, 7vw, 96px) var(--pad) clamp(24px, 3vw, 40px);
+  text-align: left;
+}
+
+.books-title {
+  display: flex;
+  flex-direction: column;
+  margin: 12px 0 20px;
+  line-height: 1.05;
+}
+
+.books-title .en {
+  font-weight: 800;
+  font-size: clamp(40px, 6vw, 72px);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.books-title .vi {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 8px;
+}
+
+.books-intro {
+  max-width: 64ch;
+  margin: 0 0 6px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.books-intro-vi {
+  max-width: 64ch;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.books-section {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: clamp(32px, 5vw, 64px) var(--pad) clamp(64px, 8vw, 120px);
+  border-top: 1px solid var(--line);
+}
+
+.book-entry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: clamp(28px, 4vw, 64px);
+  padding: clamp(36px, 5vw, 64px) 0;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+
+.book-entry:last-child {
+  border-bottom: none;
+}
+
+/* --- Preview column --- */
+.book-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(560px, 100%);
+  flex-shrink: 0;
+}
+
+.flipbook {
+  position: relative;
+  width: min(560px, 100%);
+  max-width: 100%;
+  background: #fafafa;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.flipbook-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Transparent overlay that sits on top of the image and absorbs
+   right-clicks and drags. Controls live OUTSIDE .flipbook so the
+   guard doesn't block them. */
+.flipbook-guard {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.flip-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.flip-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  border-radius: var(--radius);
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+
+.flip-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.flip-counter {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 56px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.flip-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  font-size: 11px;
+  text-align: center;
+}
+
+.flip-note .en {
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.flip-note .vi {
+  color: var(--muted-2);
+  font-style: italic;
+}
+
+/* --- Info column --- */
+.book-info {
+  min-width: 0;
+  max-width: 56ch;
+}
+
+.book-kind {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.book-kind .en {
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.book-kind .vi {
+  font-weight: 400;
+  color: var(--muted);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.book-title {
+  margin: 0 0 8px;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.book-authors {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.book-body {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+.book-body-vi {
+  margin: 0 0 24px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.book-buy {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 18px;
+  border: 1px solid var(--ink);
+  background: #fff;
+  color: var(--ink);
+  border-radius: var(--radius);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.book-buy .en {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.book-buy .vi {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--muted);
+  transition: color var(--t-fast);
+}
+
+.book-buy:hover {
+  background: var(--ink);
+  color: #fff;
+}
+
+.book-buy:hover .vi {
+  color: var(--muted-2);
+}
+
+@media (max-width: 760px) {
+  .book-entry {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 28px;
+  }
+
+  .book-info {
+    text-align: left;
+  }
+}
+
 /* ---------- Footer ---------- */
 .footer {
   max-width: var(--max);
@@ -739,5 +1262,23 @@ main {
   .pillar + .pillar {
     border-left: none;
     border-top: 1px solid var(--line);
+  }
+
+  .pub-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .pub-year {
+    padding-top: 0;
+  }
+
+  .app-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .app-num {
+    padding-top: 0;
   }
 }

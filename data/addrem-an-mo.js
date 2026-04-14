@@ -87,11 +87,6 @@ const BANK_AN_MO = {
       nuance_vi: "Sống đứng đắn, tử tế, không gian dối.",
       nuance_en: "Living decently, upstanding, no dishonesty." },
 
-    { vi: "đàng hoàng",
-      render: ["tôi ăn ở", "+đàng hoàng"],
-      nuance_vi: "Chữ lẻ có thể đắp vào các compound. Đứng đắn, tử tế, chín chắn.",
-      nuance_en: "A modifier word that can attach to many compounds. Decent, proper, upstanding." },
-
     // ---- Compounds ăn nói ----
     { vi: "ăn nói lễ phép",
       render: ["tôi ăn", "+nói lễ phép"],
