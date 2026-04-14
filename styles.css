@@ -743,8 +743,9 @@ main {
   max-width: var(--max);
   margin: 0 auto;
   padding: 0 var(--pad) clamp(72px, 10vw, 140px);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
   gap: 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -752,9 +753,13 @@ main {
 
 .pillar {
   position: relative;
+  flex: 1 1 0;
+  min-width: 0;
   padding: clamp(40px, 5vw, 72px) clamp(28px, 4vw, 56px);
   background: #ffffff;
   border-radius: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .pillar + .pillar {
@@ -792,7 +797,8 @@ main {
 }
 
 .pillar-body-vi {
-  margin: 0;
+  margin: auto 0 0;
+  padding-top: 20px;
   font-size: 14px;
   line-height: 1.6;
   color: var(--muted);
@@ -3596,40 +3602,40 @@ body.code-modal-open {
   }
 }
 
-/* ---------- Photos: mobile/tablet fade slideshow ----------
-   Below 1024px the horizontal accordion is replaced by a single
-   full-frame slideshow. Why:
-     - 44px slivers are well below a tap target
-     - hover doesn't exist on touch — auto-cycle is the only
-       reasonable interaction
-     - horizontal scroll inside the rack fights vertical page scroll
-     - mobile Safari's URL bar plays badly with 100vh layouts
-   The JS keeps toggling .is-active as before; on this breakpoint
-   we stack all items on top of each other with absolute
-   positioning and crossfade between them. The active photo also
-   gets a slow ken-burns zoom so the frame is never completely
-   still. Tap anywhere on the rack to advance to the next photo. */
+/* ---------- Photos: mobile/tablet vertical scroll ----------
+   Below 1024px the horizontal accordion is replaced by a simple
+   vertical column where each photo is one block at its NATIVE
+   aspect ratio, full viewport width. Why:
+     - touch can't do hover; horizontal swipe fights vertical
+       scroll; an absolute-positioned slideshow runs out of
+       memory and crashes mobile Safari
+     - vertical scroll is the most natural mobile photo gesture
+     - native loading="lazy" lets the browser GC off-screen
+       bitmaps automatically — no JS virtualization needed
+     - portraits AND landscapes both show in full at their own
+       aspect ratio, no letterbox, no cropping
+   Animation: each block fades up as it enters the viewport via
+   IntersectionObserver (added by JS). The currently most-visible
+   block also gets a subtle ken-burns scale while it sits in the
+   middle of the screen — same Camille-Mormal-style movement as
+   desktop, but driven by scroll position instead of a timer. */
 
 @media (max-width: 1024px) {
   .photos-accordion {
-    /* dvh first — accounts for the dynamic viewport with mobile
-       browser chrome retracting/expanding; vh is the fallback. */
-    height: clamp(420px, 65vh, 720px);
-    height: clamp(420px, 65dvh, 720px);
+    height: auto !important;
     width: 100%;
     margin: 0;
-    padding: 0;
-    overflow: hidden;
-    position: relative;
+    padding: 0 0 40px;
+    overflow: visible;
     background: #0a0a0a;
-    cursor: pointer;
+    position: static;
+    cursor: default;
   }
 
   .photos-track {
-    position: absolute;
-    inset: 0;
-    display: block;
-    height: 100%;
+    position: static !important;
+    display: block !important;
+    height: auto !important;
     width: 100%;
     transform: none !important;
     transition: none !important;
@@ -3638,96 +3644,95 @@ body.code-modal-open {
   }
 
   .pa-item,
+  .pa-item.is-active,
   .pa-item:hover:not(.is-active) {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    display: block;
     width: 100% !important;
-    height: 100% !important;
-    margin: 0;
+    height: auto !important;
+    margin: 0 0 36px;
+    inset: auto;
+    background: #0a0a0a;
     overflow: hidden;
-    background: #0a0a0a;
-    cursor: pointer;
-    transition: opacity 900ms cubic-bezier(.55, .05, .25, 1);
-    will-change: opacity;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .pa-item.is-active {
-    width: 100% !important;
-    opacity: 1;
+    cursor: default;
     pointer-events: auto;
-    z-index: 2;
-  }
-
-  .pa-img {
-    position: absolute !important;
-    inset: 0;
-    width: 100% !important;
-    height: 100% !important;
-    /* contain so portrait + landscape both show in full with no
-       crop — no native-aspect column trick on mobile, just a
-       universal letterbox against the dark background. */
-    object-fit: contain !important;
-    object-position: center;
-    background: #0a0a0a;
-    filter: none !important;
-    transform: scale(1);
-    transition: none;
-    animation: none;
-  }
-
-  /* Slow ken-burns zoom on the active frame so it's never still. */
-  .pa-item.is-active .pa-img {
-    animation: paKenBurnsMobile 11s ease-in-out 200ms infinite alternate !important;
-  }
-
-  @keyframes paKenBurnsMobile {
-    0%   { transform: scale(1.01); }
-    100% { transform: scale(1.07); }
-  }
-
-  .pa-cap {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 3;
-    padding: 18px 18px 22px;
-    display: flex;
-    align-items: flex-end;
-    gap: 14px;
-    color: #fff;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0) 100%);
     opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 600ms ease 200ms, transform 600ms ease 200ms;
-    pointer-events: none;
+    transform: translateY(28px);
+    transition: opacity 800ms cubic-bezier(.2, .7, .2, 1),
+                transform 800ms cubic-bezier(.2, .7, .2, 1);
+    will-change: opacity, transform;
+    z-index: auto;
   }
 
-  .pa-item.is-active .pa-cap {
+  /* Added by IntersectionObserver when the block enters the
+     viewport — triggers the fade-up. */
+  .pa-item.is-visible {
     opacity: 1;
     transform: translateY(0);
   }
 
+  .pa-img {
+    position: relative !important;
+    inset: auto;
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    object-fit: contain;
+    background: #0a0a0a;
+    filter: none !important;
+    transform: scale(1);
+    animation: none !important;
+    transition: transform 1800ms cubic-bezier(.5, .1, .3, 1);
+    will-change: auto;
+  }
+
+  /* Subtle ken-burns only on the photo nearest viewport center. */
+  .pa-item.is-near .pa-img {
+    transform: scale(1.04);
+  }
+
+  .pa-cap {
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    background: transparent;
+    color: #fff;
+    padding: 14px 18px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto;
+  }
+
   .pa-num {
-    color: rgba(255, 255, 255, 0.72);
-    font-size: 11px;
-    padding-bottom: 2px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding-bottom: 0;
+  }
+
+  .pa-title {
+    color: #fff;
   }
 
   .pa-year {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 10px;
+    letter-spacing: 0.22em;
   }
 
   .pa-text {
     color: #fff;
-    font-size: 15px;
-    line-height: 1.3;
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 500;
   }
 
-  /* Rotated edge label is sliver-only — hidden in slideshow mode. */
+  /* The spine label was for skinny slivers — meaningless in a
+     vertical scroll layout. */
   .pa-edge {
     display: none !important;
   }
@@ -3739,17 +3744,12 @@ body.code-modal-open {
     padding-bottom: 28px;
   }
 
-  .photos-accordion {
-    height: clamp(360px, 60vh, 560px);
-    height: clamp(360px, 60dvh, 560px);
+  .pa-item {
+    margin-bottom: 28px;
   }
 
   .pa-cap {
-    padding: 14px 14px 18px;
+    padding: 12px 14px 0;
     gap: 12px;
-  }
-
-  .pa-text {
-    font-size: 14px;
   }
 }

@@ -24,14 +24,13 @@
       <p class="photos-intro">
         Photos from the classroom, in the field, and on stage.
         On wide screens, a horizontal accordion of slivers; on
-        phones and tablets, a full-frame slideshow. Tap or hover
-        to hold a frame, otherwise let it roll.
+        phones and tablets, a vertical scroll where every frame
+        shows in full at its own aspect.
       </p>
       <p class="photos-intro-vi">
         Hình từ lớp học, điền dã, và sân khấu. Trên màn hình
         rộng là phong cầm các vệt; trên điện thoại và máy tính
-        bảng là slideshow toàn khung. Chạm hoặc rê chuột để giữ
-        một khung, hoặc để nó tự cuộn.
+        bảng là cuộn dọc, mỗi khung hiện đầy đủ theo tỉ lệ gốc.
       </p>
     </section>
 
@@ -43,6 +42,57 @@
 
   <script src="photos.js"></script>
   <script>
+    // On-screen error surface — remote Safari dev tools are a
+    // pain to set up on a phone, so any uncaught error or
+    // unhandled promise rejection lands in a red bar at the
+    // bottom of the viewport. Visible + copyable. Remove once
+    // everything's stable.
+    (function () {
+      function showErr(msg) {
+        let box = document.getElementById("photos-err-box");
+        if (!box) {
+          box = document.createElement("div");
+          box.id = "photos-err-box";
+          box.style.cssText = [
+            "position:fixed",
+            "left:8px",
+            "right:8px",
+            "bottom:8px",
+            "padding:10px 12px",
+            "background:#b91c1c",
+            "color:#fff",
+            "font:12px/1.4 -apple-system, monospace",
+            "z-index:99999",
+            "border-radius:4px",
+            "white-space:pre-wrap",
+            "word-break:break-word",
+            "max-height:40vh",
+            "overflow:auto",
+          ].join(";");
+          box.addEventListener("click", () => box.remove());
+          document.body.appendChild(box);
+        }
+        box.textContent = msg;
+      }
+      window.addEventListener("error", (e) => {
+        showErr(
+          "ERR: " + (e.message || "unknown") + "\n" +
+          (e.filename || "").split("/").pop() + ":" +
+          (e.lineno || "?") + ":" + (e.colno || "?")
+        );
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        showErr("REJECT: " + (e.reason && (e.reason.message || e.reason) || "unknown"));
+      });
+    })();
+
+    // 1×1 transparent GIF — used as the placeholder src for every
+    // item that's outside the load window. Decoded cost is
+    // negligible, and the browser releases the previous (full-res)
+    // bitmap as soon as the src changes.
+    const PLACEHOLDER_SRC =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
     // Build the accordion from window.PHOTO_FILES, then run the
     // auto-cycling expand-one-collapse-rest behavior. Active item
     // occupies the full viewport height; inactive items are thin
@@ -52,13 +102,34 @@
       const rack = document.getElementById("photosAccordion");
       if (!rack || !window.PHOTO_FILES) return;
 
-      const files = window.PHOTO_FILES;
+      // Detect mobile/tablet ONCE at init. Below 1024px we build a
+      // completely different DOM/behavior: vertical scroll list
+      // with native lazy loading, no virtualization, no auto-cycle,
+      // no centering, no horizontal accordion. Reload the page on
+      // breakpoint flip rather than try to morph between modes —
+      // simpler and always correct.
+      const mobileMQ = window.matchMedia("(max-width: 1024px)");
+      const isMobileInit = mobileMQ.matches;
+      const isMobile = () => mobileMQ.matches;
+
+      // Shuffle the file list so every visit starts on a random
+      // frame and cycles through a random sequence. Fisher-Yates
+      // on a local copy — we never mutate window.PHOTO_FILES so
+      // other scripts on the page see the canonical order.
+      const files = window.PHOTO_FILES.slice();
+      for (let s = files.length - 1; s > 0; s--) {
+        const j = Math.floor(Math.random() * (s + 1));
+        const tmp = files[s];
+        files[s] = files[j];
+        files[j] = tmp;
+      }
       const total = files.length;
       const totalStr = String(total).padStart(2, "0");
 
       // Inner flex row — we translate this, not the rack, so the
       // active item can always sit at the viewport center without
       // the scroll-boundary clamp that scrollIntoView runs into.
+      // (On mobile this is reduced to a static block via CSS.)
       const track = document.createElement("div");
       track.className = "photos-track";
       rack.appendChild(track);
@@ -78,18 +149,35 @@
 
         const img = document.createElement("img");
         img.className = "pa-img";
-        img.src = "photos/" + file;
         img.alt = "";
         img.loading = "lazy";
         img.decoding = "async";
         img.draggable = false;
+        if (isMobileInit) {
+          // Mobile: simple vertical scroll, native lazy load
+          // handles memory. Use the downscaled 2000px copies so
+          // each frame stays around 16MB decoded — three or four
+          // visible at a time fits well under the iOS Safari
+          // per-tab budget.
+          img.src = "photos/" + file;
+        } else {
+          // Desktop: virtualized slot — start blank, the real src
+          // (full-resolution original) is set by updateLoadWindow
+          // only when this item enters the active window.
+          img.src = PLACEHOLDER_SRC;
+          img.dataset.srcDesktop = "photos-orig/" + file;
+          img.dataset.srcMobile = "photos/" + file;
+        }
         // As soon as the browser knows the natural dimensions,
         // write the aspect ratio onto the item as a CSS variable.
         // The active-item width rule multiplies this by the rack
         // height, so the expanded column matches the photo's own
         // shape — no letterbox, no crop.
         const setAspect = () => {
-          if (img.naturalWidth && img.naturalHeight) {
+          // Skip the 1×1 placeholder load — its 1:1 ratio would
+          // clobber the aspect we actually need from the real
+          // image. Real photos are always at least a few hundred px.
+          if (img.naturalWidth > 4 && img.naturalHeight > 4) {
             fig.style.setProperty(
               "--aspect",
               (img.naturalWidth / img.naturalHeight).toFixed(4)
@@ -102,8 +190,10 @@
             }
           }
         };
-        if (img.complete) setAspect();
-        else img.addEventListener("load", setAspect, { once: true });
+        // Not `{ once: true }` because virtualization swaps src
+        // between the real photo and the placeholder repeatedly;
+        // the listener filters out the placeholder loads.
+        img.addEventListener("load", setAspect);
         fig.appendChild(img);
 
         const cap = document.createElement("figcaption");
@@ -179,15 +269,6 @@
         return x;
       }
 
-      // Mobile/tablet breakpoint: under 1024px CSS flattens the
-      // accordion into a fade-crossfade slideshow with stacked
-      // absolutely-positioned items. The horizontal centering
-      // math becomes meaningless there — items overlap, there's
-      // no track to translate. Re-evaluated live so a window
-      // resize or device rotation flips behavior cleanly.
-      const mobileMQ = window.matchMedia("(max-width: 1024px)");
-      const isMobile = () => mobileMQ.matches;
-
       // Center the active item at the viewport horizontal center
       // using the TARGET layout (post-transition state). Both the
       // track transform and the item widths animate over the same
@@ -214,6 +295,48 @@
         }
       }
 
+      // Window size — how many items on each side of the active
+      // index get a real image src. Mobile is tight on memory so
+      // ±1 (3 frames total: prev/active/next) is the safe ceiling.
+      // Desktop has more headroom, ±5 covers the slivers a viewer
+      // can actually see flanking the active column.
+      function loadWindow() {
+        return isMobile() ? 1 : 5;
+      }
+
+      // Pick which src path to use for an item right now. Reads
+      // isMobile() live so a viewport flip swaps every loaded
+      // image to the appropriate resolution on the next call.
+      function pickSrc(img) {
+        return isMobile() ? img.dataset.srcMobile : img.dataset.srcDesktop;
+      }
+
+      // Set the real src for items within ±W of the active index
+      // (with cycle wrap so the seam between last and first stays
+      // smooth) and revert everything else to the 1×1 placeholder
+      // so the browser frees the decoded bitmap.
+      function updateLoadWindow(activeIdx) {
+        const w = loadWindow();
+        for (let k = 0; k < total; k++) {
+          const img = items[k].querySelector(".pa-img");
+          if (!img) continue;
+          const real = pickSrc(img);
+          if (!real) continue;
+          const direct = Math.abs(k - activeIdx);
+          const wrapped = total - direct;
+          const dist = Math.min(direct, wrapped);
+          const inside = dist <= w;
+          if (inside) {
+            // Use endsWith because the absolute URL the browser
+            // exposes via .src may differ from the relative path
+            // we stored in the dataset.
+            if (!img.src.endsWith(real)) img.src = real;
+          } else if (img.src !== PLACEHOLDER_SRC) {
+            img.src = PLACEHOLDER_SRC;
+          }
+        }
+      }
+
       function setActive(n, opts) {
         const o = opts || {};
         items.forEach((el, k) => el.classList.toggle("is-active", k === n));
@@ -222,6 +345,9 @@
         // isn't stuck on the lazy placeholder.
         const img = items[n].querySelector(".pa-img");
         if (img) img.loading = "eager";
+        // Memory virtualization — without this, mobile Safari
+        // decodes all 91 frames at once and the tab crashes.
+        updateLoadWindow(n);
         // Centering uses target widths, not measured ones, so we
         // can call it synchronously without waiting for reflow.
         centerItem(n, o.instant);
@@ -240,64 +366,87 @@
       }
       function stop() { if (timer) { clearInterval(timer); timer = null; } }
 
-      items.forEach((el, k) => {
-        // Hover only matters on desktop. Touch fires synthetic
-        // mouseenter on tap which would jump cycle index awkwardly.
-        el.addEventListener("mouseenter", () => {
-          if (isMobile() || userHeld) return;
-          paused = true;
-          setActive(k);
-        });
-        el.addEventListener("click", () => {
-          if (isMobile()) {
-            // Tap on the active photo advances; otherwise (a
-            // hidden item received the click somehow) just sync
-            // to that item. Either way, re-arm auto-cycle.
-            const next = (k === i) ? (i + 1) % total : k;
-            setActive(next);
+      // Desktop-only interaction. Mobile uses scroll + observers
+      // (set up further down) and doesn't need any of this.
+      if (!isMobileInit) {
+        items.forEach((el, k) => {
+          el.addEventListener("mouseenter", () => {
+            if (userHeld) return;
             paused = true;
+            setActive(k);
+          });
+          el.addEventListener("click", () => {
+            userHeld = true;
+            setActive(k);
             stop();
-            setTimeout(() => { paused = false; start(); }, 5200);
-            return;
-          }
-          userHeld = true;
-          setActive(k);
-          stop();
-          setTimeout(() => { userHeld = false; paused = false; start(); }, 6000);
+            setTimeout(() => { userHeld = false; paused = false; start(); }, 6000);
+          });
+          el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              el.click();
+            }
+          });
         });
-        el.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            el.click();
-          }
+
+        rack.addEventListener("mouseleave", () => {
+          if (userHeld) return;
+          paused = false;
         });
-      });
+      }
 
-      // On mobile the items are stacked and only the active one
-      // receives pointer events; a tap on the dark background
-      // around a portrait should still advance, so listen on the
-      // rack itself as a fallback.
-      rack.addEventListener("click", (e) => {
-        if (!isMobile()) return;
-        if (e.target.closest(".pa-item")) return; // already handled
-        setActive((i + 1) % total);
-        paused = true;
-        stop();
-        setTimeout(() => { paused = false; start(); }, 5200);
-      });
+      // Breakpoint flip (e.g. iPad rotation): mobile and desktop
+      // use completely different DOM/JS code paths, so rather
+      // than try to morph between them live, just reload the page.
+      // Simpler and always correct.
+      const onMQChange = () => {
+        if (mobileMQ.matches !== isMobileInit) location.reload();
+      };
+      if (typeof mobileMQ.addEventListener === "function") {
+        mobileMQ.addEventListener("change", onMQChange);
+      } else if (typeof mobileMQ.addListener === "function") {
+        mobileMQ.addListener(onMQChange);
+      }
 
-      rack.addEventListener("mouseleave", () => {
-        if (userHeld) return;
-        paused = false;
-      });
+      // === Mobile path: vertical scroll + IntersectionObserver ===
+      // No auto-cycle, no centerItem, no virtualization. Native
+      // lazy loading handles memory; an observer adds .is-visible
+      // (fade-up) and .is-near (subtle ken-burns) as items pass
+      // through the viewport. Skip every desktop interaction.
+      if (isMobileInit) {
+        // Fade-up when the item enters the viewport — sticky:
+        // once visible, stay visible (don't fade out on scroll up).
+        const showIO = new IntersectionObserver((entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add("is-visible");
+              showIO.unobserve(e.target);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
 
-      // When the breakpoint flips (e.g. iPad rotation, browser
-      // resize), rebuild the layout cleanly: clear desktop-only
-      // inline transform, re-center if we're back on desktop.
-      mobileMQ.addEventListener("change", () => {
-        track.style.transform = "";
-        centerItem(i, true);
-      });
+        // Ken-burns toggle for the photo nearest viewport center.
+        // Threshold is high so only one item at a time has it.
+        const nearIO = new IntersectionObserver((entries) => {
+          entries.forEach((e) => {
+            e.target.classList.toggle("is-near", e.isIntersecting);
+          });
+        }, { threshold: 0.6 });
+
+        items.forEach((it) => {
+          showIO.observe(it);
+          nearIO.observe(it);
+        });
+
+        // Force the first item visible immediately so it's not
+        // stuck at opacity 0 if it's already inside the viewport
+        // before the observer fires.
+        if (items[0]) items[0].classList.add("is-visible");
+
+        return; // mobile path ends here — no auto-cycle, no kickoff
+      }
+
+      // === Desktop path below ===
 
       // Viewport resize → recenter the current active item
       // immediately (no animation) so the layout doesn't look
@@ -314,9 +463,7 @@
       // aspect before the initial activation — otherwise the
       // expanded column would start at the fallback aspect and
       // animate to the real aspect once the image arrived, which
-      // reads as a jarring width jump on first paint. (Mobile
-      // doesn't need the aspect for layout, but the preload still
-      // helps the first crossfade arrive without a flash.)
+      // reads as a jarring width jump on first paint.
       let kicked = false;
       function kickoff() {
         if (kicked) return;
@@ -325,9 +472,8 @@
         start();
       }
       const firstImg = items[0].querySelector(".pa-img");
-      if (firstImg && firstImg.complete && firstImg.naturalWidth) {
-        kickoff();
-      } else if (firstImg) {
+      const firstReal = firstImg && pickSrc(firstImg);
+      if (firstReal) {
         const pre = new Image();
         pre.onload = () => {
           items[0].style.setProperty(
@@ -337,9 +483,9 @@
           kickoff();
         };
         pre.onerror = kickoff;
-        pre.src = firstImg.src;
+        pre.src = firstReal;
         // Safety net: don't block forever if the image is slow.
-        setTimeout(kickoff, 1200);
+        setTimeout(kickoff, 1500);
       } else {
         kickoff();
       }
