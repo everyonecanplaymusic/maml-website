@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Courses — Manhattan Academy of Music and Language</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="head-common.js"></script>
+</head>
+<body>
+  <div id="site-header" data-base="./"></div>
+  <script src="topnav.js" defer></script>
+
+  <main>
+    <section class="courses-hero">
+      <p class="eyebrow">
+        <span class="en">Current course</span>
+        <span class="vi">Khoá học hiện tại</span>
+      </p>
+      <h1 class="courses-title">
+        <span class="en">Courses</span>
+        <span class="vi">Khoá học</span>
+      </h1>
+      <p class="courses-intro">
+        Class notes and session videos live here. Each week's
+        summary is public — the video links are gated by a
+        course password shared with enrolled students.
+      </p>
+      <p class="courses-intro-vi">
+        Ghi chú và video mỗi buổi học ở đây. Tóm tắt mỗi tuần ai
+        cũng xem được — link video cần mật khẩu lớp, chia sẻ
+        riêng cho học viên đã ghi danh.
+      </p>
+    </section>
+
+    <section class="course-entry" id="courseEntry">
+      <div class="course-flyer">
+        <img
+          src="courses-assets/flyer-spring-2026.png"
+          alt="Đàn Tranh and Đàn Bầu — Spring 2026 flyer"
+          class="course-flyer-img"
+          draggable="false"
+          oncontextmenu="return false"
+        />
+      </div>
+
+      <div class="course-info">
+        <div class="course-kind">
+          <span class="en">Spring 2026 · Vietnamese Music Classes</span>
+          <span class="vi">Mùa xuân 2026 · Lớp nhạc Việt</span>
+        </div>
+        <h2 class="course-title">
+          <span class="dieu-tranh">Đàn Tranh</span>
+          <span class="course-amp">&amp;</span>
+          <span class="dieu-bau">Đàn Bầu</span>
+        </h2>
+        <p class="course-sub">hosted with Mekong NYC</p>
+
+        <div class="course-blurb" id="courseBlurb">
+          <p class="course-loading">loading…</p>
+        </div>
+
+        <dl class="course-meta">
+          <div>
+            <dt><span class="en">Where</span><span class="vi">ở đâu</span></dt>
+            <dd>
+              Manhattan Academy of Music &amp; Language<br />
+              40 West 135th St., Ste. 1S, New York, NY 10037
+            </dd>
+          </div>
+          <div>
+            <dt><span class="en">Instruments</span><span class="vi">nhạc cụ</span></dt>
+            <dd>
+              <span class="dot dot-tranh"></span>
+              <span class="dieu-tranh">đàn tranh</span>
+              — Sundays 10:40 am–11:30 am · Thursdays 6:30 pm–7:20 pm
+              <br />
+              <span class="dot dot-bau"></span>
+              <span class="dieu-bau">đàn bầu</span>
+              — Sundays 12:00 pm–12:50 pm · Thursdays 7:45 pm–8:35 pm
+            </dd>
+          </div>
+          <div>
+            <dt><span class="en">Prerequisite</span><span class="vi">yêu cầu</span></dt>
+            <dd>none — all are welcome. Instruments can be loaned from Mekong NYC.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="course-schedule-section">
+      <div class="schedule-head">
+        <h2 class="schedule-title">
+          <span class="en">Calendar</span>
+          <span class="vi">Lịch học</span>
+        </h2>
+        <p class="schedule-note">
+          Each row unlocks its video when the course password is entered.
+          Summaries stay public.
+        </p>
+        <p class="schedule-note-vi">
+          Mỗi buổi mở khoá video khi nhập đúng mật khẩu lớp. Tóm tắt thì
+          ai cũng xem được.
+        </p>
+
+        <form class="schedule-gate" id="scheduleGate" autocomplete="off">
+          <label class="schedule-gate-label" for="schedulePassword">
+            <span class="en">Course password</span>
+            <span class="vi">mật khẩu lớp</span>
+          </label>
+          <input
+            type="password"
+            id="schedulePassword"
+            class="schedule-gate-input"
+            placeholder="•••••••"
+            autocomplete="off"
+          />
+          <button type="submit" class="schedule-gate-btn">
+            <span class="en">Unlock</span>
+            <span class="vi">mở khoá</span>
+          </button>
+          <span class="schedule-gate-status" id="scheduleGateStatus"></span>
+        </form>
+      </div>
+
+      <ol class="schedule-list" id="scheduleList">
+        <li class="schedule-loading">loading schedule…</li>
+      </ol>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="sitefooter.js" defer></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="courses.js"></script>
+</body>
+</html>

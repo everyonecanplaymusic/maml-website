@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photos — Manhattan Academy of Music and Language</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="head-common.js"></script>
+</head>
+<body>
+  <div id="site-header" data-base="./"></div>
+  <script src="topnav.js" defer></script>
+
+  <main>
+    <section class="photos-hero">
+      <p class="eyebrow">
+        <span class="en">Photos from the academy</span>
+        <span class="vi">Hình ảnh của học viện</span>
+      </p>
+      <h1 class="photos-title">
+        <span class="en">Photos</span>
+        <span class="vi">Hình ảnh</span>
+      </h1>
+      <p class="photos-intro">
+        A vertical accordion — one frame expands to the full
+        height of the viewport, the others thin down to a single
+        line. Scroll, or let it roll on its own.
+      </p>
+      <p class="photos-intro-vi">
+        Phong cầm dọc — một khung hình nở ra chiếm trọn chiều
+        cao màn hình, những khung còn lại mỏng lại thành một
+        vệt. Cuộn, hoặc để nó tự cuộn.
+      </p>
+    </section>
+
+    <section class="photos-accordion" id="photosAccordion" aria-label="Photo accordion"></section>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="sitefooter.js" defer></script>
+
+  <script src="photos.js"></script>
+  <script>
+    // Build the accordion from window.PHOTO_FILES, then run the
+    // auto-cycling expand-one-collapse-rest behavior. Active item
+    // occupies the full viewport height; inactive items are thin
+    // horizontal strips. On activation the item scrolls into view
+    // so the user never loses it when it expands off-screen.
+    (function () {
+      const rack = document.getElementById("photosAccordion");
+      if (!rack || !window.PHOTO_FILES) return;
+
+      const files = window.PHOTO_FILES;
+      const total = files.length;
+      const totalStr = String(total).padStart(2, "0");
+
+      // Inner flex row — we translate this, not the rack, so the
+      // active item can always sit at the viewport center without
+      // the scroll-boundary clamp that scrollIntoView runs into.
+      const track = document.createElement("div");
+      track.className = "photos-track";
+      rack.appendChild(track);
+
+      // --- Build DOM ---
+      const frag = document.createDocumentFragment();
+      files.forEach((file, idx) => {
+        const num = String(idx + 1).padStart(2, "0");
+        const label = window.labelFromFilename(file);
+
+        const fig = document.createElement("figure");
+        fig.className = "pa-item";
+        fig.dataset.i = num;
+        fig.setAttribute("role", "button");
+        fig.setAttribute("tabindex", "0");
+        fig.setAttribute("aria-label", label.text);
+
+        const img = document.createElement("img");
+        img.className = "pa-img";
+        img.src = "photos/" + file;
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.draggable = false;
+        // As soon as the browser knows the natural dimensions,
+        // write the aspect ratio onto the item as a CSS variable.
+        // The active-item width rule multiplies this by the rack
+        // height, so the expanded column matches the photo's own
+        // shape — no letterbox, no crop.
+        const setAspect = () => {
+          if (img.naturalWidth && img.naturalHeight) {
+            fig.style.setProperty(
+              "--aspect",
+              (img.naturalWidth / img.naturalHeight).toFixed(4)
+            );
+            // If this item is already the active one, the width
+            // just jumped from the fallback aspect to the real one
+            // — re-center the track so the photo stays middle.
+            if (fig.classList.contains("is-active")) {
+              recenterIfActive(fig);
+            }
+          }
+        };
+        if (img.complete) setAspect();
+        else img.addEventListener("load", setAspect, { once: true });
+        fig.appendChild(img);
+
+        const cap = document.createElement("figcaption");
+        cap.className = "pa-cap";
+        cap.innerHTML =
+          '<span class="pa-num">' + num + " / " + totalStr + "</span>" +
+          '<span class="pa-title">' +
+            '<span class="pa-year">' + label.year + "</span>" +
+            '<span class="pa-text">' + label.text + "</span>" +
+          "</span>";
+        fig.appendChild(cap);
+
+        // The tiny edge label on compressed strips so the viewer
+        // sees the number without needing mix-blend tricks.
+        const edge = document.createElement("span");
+        edge.className = "pa-edge";
+        edge.textContent = num + "  " + label.text;
+        fig.appendChild(edge);
+
+        frag.appendChild(fig);
+      });
+      track.appendChild(frag);
+
+      // --- Activation engine ---
+      const items = Array.from(track.querySelectorAll(".pa-item"));
+      let i = 0;
+      let timer = null;
+      let paused = false;
+      let userHeld = false; // click-pin
+
+      // Called when an image loads late and the aspect changes
+      // after activation — re-centers the track with the new width.
+      function recenterIfActive(fig) {
+        const idx = items.indexOf(fig);
+        if (idx >= 0 && fig.classList.contains("is-active")) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => centerItem(idx, false));
+          });
+        }
+      }
+
+      // Center an item by translating the whole track. This runs
+      // AFTER the width change has been applied, on the next two
+      // animation frames, so we measure the item at its new width
+      // (flex hasn't laid out yet at class-toggle time).
+      function centerItem(n, instant) {
+        const el = items[n];
+        const targetLeft = el.offsetLeft + el.offsetWidth / 2;
+        const offset = rack.clientWidth / 2 - targetLeft;
+        if (instant) {
+          track.style.transition = "none";
+          track.style.transform = "translate3d(" + offset + "px, 0, 0)";
+          // Force reflow then restore transition.
+          void track.offsetWidth;
+          track.style.transition = "";
+        } else {
+          track.style.transform = "translate3d(" + offset + "px, 0, 0)";
+        }
+      }
+
+      function setActive(n, opts) {
+        const o = opts || {};
+        items.forEach((el, k) => el.classList.toggle("is-active", k === n));
+        i = n;
+        // Eagerly upgrade the active image so the expanded column
+        // isn't stuck on the lazy placeholder.
+        const img = items[n].querySelector(".pa-img");
+        if (img) img.loading = "eager";
+        // Force a layout so offsetLeft/offsetWidth report the
+        // post-toggle sizes, then center. Centering only moves the
+        // track horizontally via transform — it never scrolls the
+        // page — so we always run it, no "skip scroll" path.
+        void items[n].offsetWidth;
+        centerItem(n, o.instant);
+      }
+
+      function tick() {
+        if (paused || userHeld) return;
+        setActive((i + 1) % total);
+      }
+
+      function start() {
+        stop();
+        timer = setInterval(tick, 4200);
+      }
+      function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+      items.forEach((el, k) => {
+        el.addEventListener("mouseenter", () => {
+          if (userHeld) return;
+          paused = true;
+          setActive(k);
+        });
+        el.addEventListener("click", () => {
+          userHeld = true;
+          setActive(k);
+          stop();
+          setTimeout(() => { userHeld = false; paused = false; start(); }, 6000);
+        });
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            el.click();
+          }
+        });
+      });
+
+      rack.addEventListener("mouseleave", () => {
+        if (userHeld) return;
+        paused = false;
+      });
+
+      // Viewport resize → recenter the current active item
+      // immediately (no animation) so the layout doesn't look
+      // off-axis after a window resize or device rotation.
+      let resizeTimer = null;
+      window.addEventListener("resize", () => {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          centerItem(i, true);
+        }, 120);
+      });
+
+      // Kick off: preload the first image so we can set its aspect
+      // before the initial activation — otherwise the expanded
+      // column would start at the fallback aspect and animate to
+      // the real aspect once the image arrived, which reads as a
+      // jarring width jump on first paint.
+      let kicked = false;
+      function kickoff() {
+        if (kicked) return;
+        kicked = true;
+        setActive(0, { instant: true });
+        start();
+      }
+      const firstImg = items[0].querySelector(".pa-img");
+      if (firstImg && firstImg.complete && firstImg.naturalWidth) {
+        kickoff();
+      } else if (firstImg) {
+        const pre = new Image();
+        pre.onload = () => {
+          items[0].style.setProperty(
+            "--aspect",
+            (pre.naturalWidth / pre.naturalHeight).toFixed(4)
+          );
+          kickoff();
+        };
+        pre.onerror = kickoff;
+        pre.src = firstImg.src;
+        // Safety net: don't block forever if the image is slow.
+        setTimeout(kickoff, 1200);
+      } else {
+        kickoff();
+      }
+    })();
+  </script>
+</body>
+</html>

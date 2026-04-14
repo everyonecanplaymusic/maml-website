@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Repertoire — Manhattan Academy of Music and Language</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="head-common.js"></script>
+</head>
+<body>
+  <div id="site-header" data-base="./"></div>
+  <script src="topnav.js" defer></script>
+
+  <main>
+    <section class="rep-hero">
+      <p class="rep-eyebrow">
+        <span class="en">Đàn Tranh Repertoire</span>
+        <span class="vi">Tủ bài đàn tranh</span>
+      </p>
+      <h1 class="rep-title">
+        <span class="vi-big">Repertoire</span>
+        <span class="en-small">tab tutorials · folk songs · modern pieces</span>
+      </h1>
+      <p class="rep-blurb">
+        Every piece has graded tablature (typically eight levels, Level 1
+        the simplest to Level 8 the most expressive) and short practice
+        videos for every phrase. Pick a piece, pick a level, play along.
+      </p>
+      <p class="rep-blurb-vi">
+        Mỗi bài có tablature chia cấp (thường 8 level — Level 1 đơn
+        giản nhất, Level 8 giàu biểu cảm nhất) cùng video luyện tập
+        từng phrase. Chọn bài, chọn level, chơi theo.
+      </p>
+    </section>
+
+    <section>
+      <div class="rep-index" id="rep-index">
+        <!-- Engine fills this from window.REPERTOIRE -->
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="sitefooter.js" defer></script>
+
+  <script src="repertoire-data.js"></script>
+  <script src="repertoire.js"></script>
+</body>
+</html>
