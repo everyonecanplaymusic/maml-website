@@ -137,24 +137,59 @@
       function recenterIfActive(fig) {
         const idx = items.indexOf(fig);
         if (idx >= 0 && fig.classList.contains("is-active")) {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => centerItem(idx, false));
-          });
+          centerItem(idx, false);
         }
       }
 
-      // Center an item by translating the whole track. This runs
-      // AFTER the width change has been applied, on the next two
-      // animation frames, so we measure the item at its new width
-      // (flex hasn't laid out yet at class-toggle time).
+      // Collapsed sliver width (matches CSS). Read from a CSS
+      // custom property so responsive breakpoints stay in sync.
+      function collapsedW() {
+        const raw = getComputedStyle(rack).getPropertyValue("--item-w");
+        const n = parseFloat(raw);
+        return n > 0 ? n : 44;
+      }
+
+      // Gap between items (matches .photos-track gap).
+      const GAP = 2;
+
+      // Target width of an item in the FINAL state after the class
+      // toggle — computed from CSS variables, NOT measured from the
+      // DOM. Measuring offsetWidth mid-transition returns the
+      // currently-animating value, not the target, and produces a
+      // centering offset that matches the wrong frame of the
+      // animation. This function gives the committed target.
+      function targetWidth(idx, activeIdx) {
+        if (idx !== activeIdx) return collapsedW();
+        const el = items[idx];
+        const rackH = rack.clientHeight;
+        const aspectRaw = el.style.getPropertyValue("--aspect");
+        const aspect = parseFloat(aspectRaw) || 0.67;
+        return Math.min(aspect * rackH, window.innerWidth * 0.98);
+      }
+
+      // Sum of target widths for items [0..n), plus the gaps
+      // between them. Gives the final offsetLeft of item n.
+      function targetOffsetLeft(n, activeIdx) {
+        let x = 0;
+        for (let k = 0; k < n; k++) {
+          x += targetWidth(k, activeIdx) + GAP;
+        }
+        return x;
+      }
+
+      // Center the active item at the viewport horizontal center
+      // using the TARGET layout (post-transition state). Both the
+      // track transform and the item widths animate over the same
+      // 900ms bezier, so the motion stays in sync without needing
+      // to measure interpolated values.
       function centerItem(n, instant) {
-        const el = items[n];
-        const targetLeft = el.offsetLeft + el.offsetWidth / 2;
-        const offset = rack.clientWidth / 2 - targetLeft;
+        const left = targetOffsetLeft(n, n);
+        const w = targetWidth(n, n);
+        const targetCenter = left + w / 2;
+        const offset = rack.clientWidth / 2 - targetCenter;
         if (instant) {
           track.style.transition = "none";
           track.style.transform = "translate3d(" + offset + "px, 0, 0)";
-          // Force reflow then restore transition.
           void track.offsetWidth;
           track.style.transition = "";
         } else {
@@ -170,11 +205,8 @@
         // isn't stuck on the lazy placeholder.
         const img = items[n].querySelector(".pa-img");
         if (img) img.loading = "eager";
-        // Force a layout so offsetLeft/offsetWidth report the
-        // post-toggle sizes, then center. Centering only moves the
-        // track horizontally via transform — it never scrolls the
-        // page — so we always run it, no "skip scroll" path.
-        void items[n].offsetWidth;
+        // Centering uses target widths, not measured ones, so we
+        // can call it synchronously without waiting for reflow.
         centerItem(n, o.instant);
       }
 

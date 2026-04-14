@@ -92,6 +92,54 @@
     header.appendChild(brand);
     header.appendChild(nav);
     mount.replaceWith(header);
+
+    // Balanced wrap: when the row is narrow enough that nav
+    // items wrap to a second line, flex would pack row 1 full
+    // and leave row 2 with the overflow (e.g. 7 + 4). Users
+    // expect a more even split (6 + 5). We measure, and if
+    // wrapping is detected, set max-width on the nav equal to
+    // the natural width of ceil(N/2) items + gaps. Flex then
+    // breaks right at the midpoint.
+    balanceNav(nav);
+
+    // Rebalance on resize. Debounced with rAF so a drag-resize
+    // doesn't thrash layout.
+    let rafId = 0;
+    window.addEventListener("resize", () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => balanceNav(nav));
+    });
+  }
+
+  function balanceNav(nav) {
+    if (!nav) return;
+    // Clear any prior max-width so we can measure the natural
+    // (unconstrained) wrap state first.
+    nav.style.maxWidth = "";
+
+    const links = Array.from(nav.querySelectorAll("a"));
+    if (links.length < 2) return;
+
+    // Wrapping iff first and last items are on different rows.
+    if (links[0].offsetTop === links[links.length - 1].offsetTop) {
+      return; // single row, nothing to balance
+    }
+
+    // Target row 1 = ceil(N/2) items. Measure their total width
+    // plus gaps, use that as nav's max-width → flex breaks right
+    // after the half-count item.
+    const half = Math.ceil(links.length / 2);
+    const cs = getComputedStyle(nav);
+    const gap = parseFloat(cs.columnGap) || parseFloat(cs.gap) || 0;
+
+    let row1Width = 0;
+    for (let i = 0; i < half; i++) {
+      row1Width += links[i].offsetWidth;
+    }
+    row1Width += gap * (half - 1);
+
+    // +4px slack to avoid a sub-pixel shove into a third row.
+    nav.style.maxWidth = Math.ceil(row1Width + 4) + "px";
   }
 
   if (document.readyState === "loading") {

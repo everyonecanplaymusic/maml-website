@@ -3004,6 +3004,9 @@ body.lightbox-open {
 
 .photos-accordion {
   --header-h: 84px;
+  /* Collapsed sliver width — JS reads this via getComputedStyle
+     to stay in sync with CSS breakpoints (36px on mobile). */
+  --item-w: 44px;
   margin: 0;
   padding: 0;
   max-width: none;
@@ -3035,7 +3038,7 @@ body.lightbox-open {
   position: relative;
   margin: 0;
   flex: 0 0 auto;
-  width: 44px;
+  width: var(--item-w, 44px);
   height: 100%;
   overflow: hidden;
   background: #0a0a0a;
