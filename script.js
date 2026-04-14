@@ -9,17 +9,19 @@
      3. Sets per-card CSS custom properties (accent color,
         shelf position, breathe delay) so styles.css stays
         slot-agnostic
-     4. Wires up swap behavior: flip-rotate animation, two
+     4. Wires up swap/add behavior: flip-rotate animation, two
         interaction modes (auto / user), idle auto-pull
-     5. Centers the active swapped word via the
-        1fr | auto | 1fr grid in styles.css
+     5. Centers the active content: SWAP uses a 1fr|auto|1fr
+        grid; ADD uses flex-centered segments inside
+        .mod-word-active.
 
-   Adding a new SWAP card: append an object to window.MODULES.
-   No edits to this file or styles.css are needed.
+   Adding a new card: append an object to window.MODULES.
+   No edits to this file or styles.css are needed if the card
+   uses an existing type ("swap" or "add").
 
-   Adding a new card TYPE (addrem, overlapping, …): register
-   a new RENDERER and a new BEHAVIOR. The dispatch table at
-   the bottom routes events by `module.type`.
+   Adding a new card TYPE: register a new RENDERER and a new
+   BEHAVIOR. The dispatch table at the bottom routes events
+   by `module.type`.
    ============================================================ */
 
 (() => {
@@ -28,7 +30,10 @@
   const SWAP_INTERVAL_MS = 4000;
   const FLIP_HALF_MS     = 350;
   const IDLE_AUTO_MS     = 20000;
-  const AUTO_DEMO_LENGTH = 5;
+  // Auto demo now runs indefinitely until the user interacts — the
+  // page boots into auto mode so there's a live card on load, and it
+  // keeps swapping until the first tap / Esc / close.
+  const AUTO_DEMO_LENGTH = Infinity;
 
   // ----- DOM -----
   const library  = document.getElementById("tacLibrary");
@@ -40,30 +45,131 @@
     return;
   }
 
-  // ----- Shelf layout: distribute N cards along a curved row -----
-  // Side cards lean inward, depth recedes from the front-right.
-  // Pure formula — works for any N >= 1.
+  // ----- Shelf layout: rectangular ring around the active card -----
+  // Cards are distributed evenly along the PERIMETER of a rectangle
+  // (not by angle — equal-angle distribution would be uneven on a
+  // rectangle because the four edges have different lengths). Works
+  // for any N >= 1: top/bottom edges are longer than the sides, so
+  // they naturally receive proportionally more cards as N grows.
+  //
+  // Start offset is W/2 so the first card lands dead-center on the
+  // top edge, which anchors the ring visually.
+  //
+  // Each card also picks up a small DETERMINISTIC pseudo-random
+  // offset on top of its base rectangle position (y, z, rotY, rotZ).
+  // This breaks the mechanical grid feel and makes the shelf read as
+  // hand-placed rather than stamped from a stencil. Determinism (via
+  // a sin-based hash of the index) means the layout is identical on
+  // every reload — the "jitter" is part of the design, not a reroll.
   function computeShelf(n) {
-    const positions = [];
-    const xStep = 320;
-    const lift  = 60;
-    const center = (n - 1) / 2;
+    // Ring must be large enough to cleanly FRAME the active card.
+    // The active card is scaled 1.1 with min-height 320px, so its
+    // vertical half-extent is roughly 176px. H must leave clearance
+    // above/below that, or the active card will occlude the top row.
+    //
+    // Ring center = library center = active card center = 0. Keeping
+    // all three aligned means the library can be symmetric around
+    // the ring with zero wasted space at top or bottom.
+    const W = 1240;
+    const H = 680;
+    const Y_OFFSET = 0;
+    const perim = 2 * (W + H);
+    const step  = perim / n;
+    const start = W / 2;
 
+    // Hash 01: deterministic pseudo-random in [0, 1) from (i, salt).
+    const r01 = (i, salt) => {
+      const s = Math.sin((i + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+      return s - Math.floor(s);
+    };
+
+    const positions = [];
     for (let i = 0; i < n; i++) {
-      const offset = i - center;            // -…, 0, …, +…
-      const t = n === 1 ? 0 : (i / (n - 1)) * 2 - 1;  // -1 → +1
+      const d = (start + i * step) % perim;
+      let x, y, rotY;
+
+      if (d < W) {
+        x = -W / 2 + d;
+        y = -H / 2;
+        rotY = 0;
+      } else if (d < W + H) {
+        x =  W / 2;
+        y = -H / 2 + (d - W);
+        rotY = -14;
+      } else if (d < 2 * W + H) {
+        x =  W / 2 - (d - W - H);
+        y =  H / 2;
+        rotY = 0;
+      } else {
+        x = -W / 2;
+        y =  H / 2 - (d - 2 * W - H);
+        rotY = 14;
+      }
+
+      const jy  = (r01(i, 1) - 0.5) * 44;   // ±22 px vertical drift
+      const jz  = (r01(i, 2) - 0.5) * 120;  // ±60 px depth
+      const jrY = (r01(i, 3) - 0.5) * 10;   // ±5° extra yaw
+      const jrZ = (r01(i, 4) - 0.5) * 4;    // ±2° tilt
+
       positions.push({
-        x:    offset * xStep,
-        y:    lift,
-        z:    -Math.abs(offset) * 80,
-        rotY: -t * 18,                      // leftmost +18°, rightmost -18°
-        rotZ: -offset * 1,
+        x,
+        y:    y + jy + Y_OFFSET,
+        z:    -120 + jz,
+        rotY: rotY + jrY,
+        rotZ: jrZ,
       });
     }
     return positions;
   }
 
+  // ----- Segment rendering helper -----
+  // ADD cards describe each bank entry as an array of segments:
+  //   [{ text: "tôi",    hit: false },
+  //    { text: "có",     hit: true  },
+  //    { text: "ăn cơm", hit: false },
+  //    { text: "đâu",    hit: true  }]
+  // `hit: true` segments get the accent color (.seg-hit); others
+  // are muted context (.seg-mute). This supports template pairs
+  // where BOTH halves of a two-word clamp are highlighted at once.
+  function renderSegments(el, segments) {
+    el.replaceChildren();
+    for (const seg of segments) {
+      const span = document.createElement("span");
+      span.className = seg.hit ? "seg-hit" : "seg-mute";
+      span.textContent = seg.text;
+      el.appendChild(span);
+    }
+  }
+
+  // ----- Entry → DOM writer -----
+  // Writes a bank entry into a card's DOM without animation. Used
+  // both for the initial preview (each inactive card shows a
+  // different non-canonical variant so the shelf doesn't read as
+  // ten copies of "tôi ăn cơm") and for reset() when a card is
+  // released from active state — it returns to its own preview,
+  // not the generic baseline.
+  function applyEntry(card, entry) {
+    if (card.module.type === "swap") {
+      card.wordEl.textContent = entry.word;
+    } else if (card.module.type === "add") {
+      renderSegments(card.wordEl, entry.segments);
+    }
+    card.footEnEl.textContent = entry.en;
+    card.footViEl.textContent = entry.vi;
+    card.current = entry;
+  }
+
   // ----- Renderers (one per module type) -----
+  // Both types reuse #tacModuleTemplate. The differences:
+  //   SWAP — the module owns a fixed sentence [left, active, right].
+  //          Only the middle .mod-word-active rotates per swap; left
+  //          and right stay constant. Uses a 1fr|auto|1fr grid so
+  //          the active word is pinned to the card center.
+  //   ADD  — each bank entry brings its own segment list. All content
+  //          lives inside .mod-word-active as child spans; left and
+  //          right are empty and hidden (:empty). On flip we rebuild
+  //          the segments at the midpoint and let the whole word
+  //          container rotate as one.
   const RENDERERS = {
     swap(module) {
       const node = template.content.firstElementChild.cloneNode(true);
@@ -71,12 +177,28 @@
       node.dataset.id   = module.id;
       node.dataset.type = module.type;
 
-      node.style.setProperty("--accent", module.color);
-
+      node.querySelector(".mod-kind").textContent   = "SWAP";
       node.querySelector(".mod-target").textContent = `"${module.target}"`;
       node.querySelector(".mod-left").textContent   = module.sentence[0];
       node.querySelector(".mod-word-active").textContent = module.sentence[1];
       node.querySelector(".mod-right").textContent  = module.sentence[2];
+      node.querySelector(".mod-foot-en").textContent = module.role.en;
+      node.querySelector(".mod-foot-vi").textContent = module.role.vi;
+
+      return node;
+    },
+
+    add(module) {
+      const node = template.content.firstElementChild.cloneNode(true);
+      node.dataset.slot = module.slot;
+      node.dataset.id   = module.id;
+      node.dataset.type = module.type;
+
+      const first = module.bank[0];         // canonical: usually the bare sentence
+
+      node.querySelector(".mod-kind").textContent   = "ADD";
+      node.querySelector(".mod-target").textContent = `"${module.target}"`;
+      renderSegments(node.querySelector(".mod-word-active"), first.segments);
       node.querySelector(".mod-foot-en").textContent = module.role.en;
       node.querySelector(".mod-foot-vi").textContent = module.role.vi;
 
@@ -97,32 +219,35 @@
     return a;
   }
 
-  const BEHAVIORS = {
-    swap: {
-      // Build a fresh shuffled queue. When the queue is exhausted, the
-      // engine reshuffles — so within one cycle no word repeats.
-      buildQueue(card) {
-        const q = shuffle(card.module.bank);
-        // Avoid starting the new queue with the word that's currently shown
-        if (q.length > 1 && card.current && q[0].word === card.current.word) {
-          [q[0], q[1]] = [q[1], q[0]];
-        }
-        return q;
-      },
+  // Shared queue helpers: both SWAP and ADD use Fisher-Yates on the
+  // whole bank and compare by `word` for uniqueness. Within one cycle
+  // no word repeats.
+  function buildQueueGeneric(card) {
+    const q = shuffle(card.module.bank);
+    if (q.length > 1 && card.current && q[0].word === card.current.word) {
+      [q[0], q[1]] = [q[1], q[0]];
+    }
+    return q;
+  }
 
-      pickNext(card) {
-        if (!card.queue || card.queue.length === 0) {
-          card.queue = BEHAVIORS.swap.buildQueue(card);
-        }
-        let next = card.queue.shift();
-        // Defensive: if the queue happened to start with the current word,
-        // rotate it to the back and take the next one
-        if (next.word === card.current.word && card.queue.length > 0) {
-          card.queue.push(next);
-          next = card.queue.shift();
-        }
-        return next;
-      },
+  function pickNextGeneric(card) {
+    if (!card.queue || card.queue.length === 0) {
+      card.queue = buildQueueGeneric(card);
+    }
+    let next = card.queue.shift();
+    if (next.word === card.current.word && card.queue.length > 0) {
+      card.queue.push(next);
+      next = card.queue.shift();
+    }
+    return next;
+  }
+
+  const BEHAVIORS = {
+    // SWAP: only the middle .mod-word-active rotates. Left and right
+    // stay constant per card (module.sentence[0] and [2]).
+    swap: {
+      buildQueue: buildQueueGeneric,
+      pickNext:   pickNextGeneric,
 
       flip(card, entry) {
         if (card.flipping) return;
@@ -149,24 +274,73 @@
       },
 
       reset(card) {
-        const canon = card.module.bank[0];
-        if (card.current.word === canon.word) return;
+        const target = card.preview || card.module.bank[0];
+        if (card.current.word === target.word) return;
+        card.wordEl.classList.remove("flip-out", "flip-in");
+        applyEntry(card, target);
+        card.flipping = false;
+      },
+    },
+
+    // ADD: .mod-word-active holds the whole sentence as segment
+    // children. At the midpoint of the flip — when the container
+    // is edge-on and invisible — we rebuild the segments in a
+    // single synchronous pass. The user sees the whole sentence
+    // rotate as one unit, with the new content appearing after
+    // the fold. Template pairs (two highlights at once) fall out
+    // for free because rebuild takes a segment list of any shape.
+    add: {
+      buildQueue: buildQueueGeneric,
+      pickNext:   pickNextGeneric,
+
+      flip(card, entry) {
+        if (card.flipping) return;
+        card.flipping = true;
+
         const el = card.wordEl;
         el.classList.remove("flip-out", "flip-in");
-        el.textContent = canon.word;
-        card.current  = canon;
+        void el.offsetWidth;
+
+        el.classList.add("flip-out");
+        card.current = entry;
+
+        setTimeout(() => {
+          renderSegments(el, entry.segments);
+
+          el.classList.remove("flip-out");
+          void el.offsetWidth;
+          el.classList.add("flip-in");
+
+          card.footEnEl.textContent = entry.en;
+          card.footViEl.textContent = entry.vi;
+
+          setTimeout(() => { card.flipping = false; }, FLIP_HALF_MS);
+        }, FLIP_HALF_MS);
+      },
+
+      reset(card) {
+        const target = card.preview || card.module.bank[0];
+        if (card.current.word === target.word) return;
+        card.wordEl.classList.remove("flip-out", "flip-in");
+        applyEntry(card, target);
         card.flipping = false;
-        card.footEnEl.textContent = canon.en;
-        card.footViEl.textContent = canon.vi;
       },
     },
   };
 
   // ----- Build cards from MODULES -----
+  // Defensive: if a module references a bank that hasn't been wired
+  // up yet (e.g. data file still in progress), skip it with a warning
+  // instead of throwing. One missing bank must not break the whole
+  // trailer — the remaining cards still render and position correctly.
   const cards = window.MODULES.map(module => {
     const renderer = RENDERERS[module.type];
     if (!renderer) {
       console.warn(`No renderer for module type "${module.type}"`);
+      return null;
+    }
+    if (!Array.isArray(module.bank) || module.bank.length === 0) {
+      console.warn(`Module "${module.id}" has no bank yet — skipping`);
       return null;
     }
     const el = renderer(module);
@@ -175,7 +349,9 @@
     return {
       module,
       el,
+      leftEl:   el.querySelector(".mod-left"),
       wordEl:   el.querySelector(".mod-word-active"),
+      rightEl:  el.querySelector(".mod-right"),
       footEnEl: el.querySelector(".mod-foot-en"),
       footViEl: el.querySelector(".mod-foot-vi"),
       modeEl:   el.querySelector(".mod-mode"),
@@ -184,8 +360,19 @@
     };
   }).filter(Boolean);
 
-  // Apply shelf positions + breathe delays
+  // Apply shelf positions + breathe delays + derived accent color.
+  //
+  // RULE: a card's --accent is DERIVED from its index via HSL,
+  // never hardcoded in modules.js. With N cards evenly spaced
+  // around the hue wheel (+ a starting offset so we avoid pure
+  // red), every card is guaranteed a visually distinct hue no
+  // matter how many cards you add. Saturation/lightness are
+  // tuned once here for the Japanese/Swiss restraint palette —
+  // rich but not neon.
   const shelf = computeShelf(cards.length);
+  const HUE_OFFSET = 15;        // start past pure red
+  const SAT        = 62;        // %
+  const LIGHT      = 42;        // %
   cards.forEach((card, i) => {
     const p = shelf[i];
     card.el.style.setProperty("--shelf-x",    `${p.x}px`);
@@ -198,15 +385,23 @@
     // (which uses a higher specificity selector) can override it without
     // fighting an inline style.
     card.el.style.setProperty("--shelf-z-index", i + 1);
+
+    const hue = (i / cards.length) * 360 + HUE_OFFSET;
+    card.el.style.setProperty("--accent", `hsl(${hue} ${SAT}% ${LIGHT}%)`);
   });
 
-  // Hint text (rendered from card count so it stays accurate)
-  if (hint) {
-    hint.querySelector(".en").textContent =
-      `${cards.length} of many modules · more on the way`;
-    hint.querySelector(".vi").textContent =
-      `${cards.length} trong số nhiều thẻ · sẽ có thêm nữa`;
-  }
+  // ----- Per-card preview ---------------------------------------
+  // Each card picks a non-canonical entry from its bank as the
+  // displayed preview, so the shelf at rest doesn't read as ten
+  // copies of "tôi ăn cơm". Deterministic by card index — same
+  // variant every reload, so the layout stays stable.
+  cards.forEach((card, i) => {
+    const bank = card.module.bank;
+    card.preview = bank.length > 1
+      ? bank[1 + (i % (bank.length - 1))]
+      : bank[0];
+    applyEntry(card, card.preview);
+  });
 
   // ----- State -----
   let activeCard = null;
@@ -374,6 +569,14 @@
   });
 
   // ----- Boot -----
-  scheduleIdleAutoPull();
+  // Open the page with a live auto-mode card so the trailer never
+  // starts cold. A random card gets engaged immediately and keeps
+  // cycling until the user interacts (click, Esc, close button). On
+  // release, the idle scheduler takes over and auto-pulls again
+  // after IDLE_AUTO_MS of quiet.
+  if (cards.length > 0) {
+    const first = cards[Math.floor(Math.random() * cards.length)];
+    engageCard(first, "auto");
+  }
 
 })();
