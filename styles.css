@@ -1,0 +1,691 @@
+/* ============================================================
+   Manhattan Academy of Music and Language — landing page
+   Single font: Be Vietnam Pro
+
+   Style: Japanese / Swiss editorial restraint.
+   Sharp slabs (border-radius 2px), thin rules, generous white
+   space, no pills, no fat rounded cards, no colored washes.
+   Color is a punctuation mark — used only on the swapped word
+   inside a trailer card and the active card's 2px top hairline.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #ffffff;
+  --ink: #0a0a0a;
+  --ink-2: #2a2a2a;
+  --muted: #6a6a6a;
+  --muted-2: #9a9a9a;
+  --line: #e6e6e6;
+  --pill: #f3f3f3;
+  --pill-hover: #ebebeb;
+
+  --max: 1180px;
+  --pad: clamp(20px, 4vw, 56px);
+
+  /* Swiss restraint: every corner on the page is 2px. */
+  --radius: 2px;
+
+  --t-fast: 180ms cubic-bezier(.2, .7, .2, 1);
+  --t-med:  360ms cubic-bezier(.2, .7, .2, 1);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---------- Topbar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 18px var(--pad);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+}
+
+.brand-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-en {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.brand-vi {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.topnav {
+  grid-column: 3;
+  display: flex;
+  gap: 0;
+  justify-self: end;
+}
+
+/* Topnav: no pills. Plain text with a subtle 1px underline on
+   hover — Swiss editorial, no background washes. */
+.topnav a {
+  position: relative;
+  padding: 8px 2px;
+  margin: 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  transition: color var(--t-fast);
+}
+
+.topnav a::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 4px;
+  height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--t-fast);
+}
+
+.topnav a:hover {
+  color: var(--ink);
+}
+
+.topnav a:hover::after {
+  transform: scaleX(1);
+}
+
+/* ---------- Main ---------- */
+main {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: clamp(48px, 8vw, 112px) var(--pad) clamp(72px, 10vw, 140px);
+}
+
+.eyebrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 28px;
+  font-size: 13px;
+}
+
+.eyebrow .en {
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+}
+
+.eyebrow .vi {
+  font-weight: 400;
+  color: var(--muted-2);
+  font-style: italic;
+  font-size: 12px;
+}
+
+.hero {
+  margin-top: clamp(20px, 4vw, 40px);
+}
+
+/* ---------- Tôi Ăn Cơm trailer: shelf of swap modules ---------- */
+.tac-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(28px, 4vw, 56px);
+  width: 100%;
+}
+
+.tac-library {
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  height: 480px;
+  perspective: 1800px;
+  perspective-origin: 50% 50%;
+}
+
+/* Each card receives the following CSS custom properties from script.js,
+   set per module from modules.js. No per-slot CSS rules — adding cards
+   requires NO style edits.
+
+   --accent       : per-card highlight color (becomes border + active word)
+   --shelf-x      : px X offset on the shelf
+   --shelf-y      : px Y offset
+   --shelf-z      : px Z depth
+   --shelf-roty   : deg Y rotation
+   --shelf-rotz   : deg Z tilt
+   --breathe-delay: animation-delay for the idle breathe pulse
+*/
+
+.tac-module {
+  --accent: var(--ink);
+  --shelf-x: 0px;
+  --shelf-y: 0px;
+  --shelf-z: 0px;
+  --shelf-roty: 0deg;
+  --shelf-rotz: 0deg;
+  --breathe-delay: 0s;
+  --shelf-z-index: 1;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: var(--shelf-z-index);
+  width: 340px;
+  height: 220px;
+  padding: 22px 28px;
+  background: #ffffff;
+
+  /* RULE: restraint. Cards are sharp white slabs with subtle neutral
+     elevation. The accent color appears ONLY on the swapped word
+     itself (and as a single hairline accent on the active card's
+     top edge). No colored glows, no halos, no shrines. Aim:
+     Japanese / Swiss editorial — the page is mostly white space and
+     typography. Don't reintroduce colored shadows. */
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 14px 36px -14px rgba(0, 0, 0, 0.10);
+  transition:
+    transform 720ms cubic-bezier(.2, .7, .2, 1),
+    width 720ms cubic-bezier(.2, .7, .2, 1),
+    height 720ms cubic-bezier(.2, .7, .2, 1),
+    box-shadow 720ms cubic-bezier(.2, .7, .2, 1);
+
+  transform:
+    translate(-50%, -50%)
+    translateX(var(--shelf-x))
+    translateY(var(--shelf-y))
+    translateZ(var(--shelf-z))
+    rotateY(var(--shelf-roty))
+    rotateZ(var(--shelf-rotz));
+}
+
+/* Hover-lift on inactive shelf cards: same shelf X/rotZ, less rotY, +Z forward */
+.tac-module:hover:not(.is-active) {
+  transform:
+    translate(-50%, -50%)
+    translateX(var(--shelf-x))
+    translateY(calc(var(--shelf-y) - 18px))
+    translateZ(calc(var(--shelf-z) + 60px))
+    rotateY(calc(var(--shelf-roty) * 0.55))
+    rotateZ(var(--shelf-rotz));
+}
+
+/* Active state — pulled forward to the very center, larger, with a
+   refined neutral elevation. A single 2px accent hairline runs
+   along the very top edge as the only colored signature. */
+.tac-module.is-active {
+  width: 660px;
+  height: auto;
+  min-height: 320px;
+  padding: 32px 40px 28px;
+  transform: translate(-50%, -50%) translateY(-40px) translateZ(220px) rotateY(0deg) rotateZ(0deg) scale(1.12) !important;
+  z-index: 100;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 40px 100px -28px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  gap: 14px;
+}
+
+.tac-module.is-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+/* When one card is active, the inactive cards stay SOLID (never
+   transparent — text bleeding through is unreadable). Instead they
+   sink down a little and recede in Z so the user knows they're still
+   there, but they don't fight with the active card's content.
+   When no card is active, this override is gone and the cards rise
+   freely to their natural shelf position. */
+.tac-library.has-active .tac-module:not(.is-active) {
+  transform:
+    translate(-50%, -50%)
+    translateX(var(--shelf-x))
+    translateY(calc(var(--shelf-y) + 70px))
+    translateZ(calc(var(--shelf-z) - 180px))
+    rotateY(var(--shelf-roty))
+    rotateZ(var(--shelf-rotz));
+}
+
+/* ----- Card content ----- */
+.mod-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.mod-kind {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  color: var(--muted-2);
+  text-transform: uppercase;
+}
+
+.mod-target {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--accent);
+  font-style: italic;
+}
+
+.mod-sentence {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: baseline;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 6px 0;
+  perspective: 900px;
+  width: 100%;
+  min-width: 0;
+}
+
+.mod-side {
+  color: var(--ink);
+  white-space: nowrap;
+  font-weight: 800;
+  opacity: 0.75;
+}
+
+.mod-left  { text-align: right; padding-right: 0.36em; }
+.mod-right { text-align: left;  padding-left:  0.36em; }
+
+.mod-word-active {
+  color: var(--accent);
+  display: inline-block;
+  white-space: nowrap;
+  text-align: center;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+@keyframes mod-flip-out {
+  0%   { transform: rotateX(0deg);   opacity: 1; }
+  100% { transform: rotateX(-90deg); opacity: 0; }
+}
+@keyframes mod-flip-in {
+  0%   { transform: rotateX(90deg);  opacity: 0; }
+  100% { transform: rotateX(0deg);   opacity: 1; }
+}
+
+.mod-word-active.flip-out {
+  animation: mod-flip-out 350ms cubic-bezier(.6, .02, .4, 1) forwards;
+}
+.mod-word-active.flip-in {
+  animation: mod-flip-in 350ms cubic-bezier(.6, .02, .4, 1) forwards;
+}
+
+.mod-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  text-align: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.mod-foot-en,
+.mod-foot-vi {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.mod-foot-en {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.mod-foot-vi {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* ----- Active-state typographic boost ----- */
+.tac-module.is-active .mod-target {
+  font-size: 20px;
+}
+
+.tac-module.is-active .mod-sentence {
+  font-size: clamp(36px, 5vw, 48px);
+  margin: 12px 0;
+}
+
+.tac-module.is-active .mod-foot-en {
+  font-size: 14px;
+}
+
+.tac-module.is-active .mod-foot-vi {
+  font-size: 12px;
+}
+
+.mod-mode {
+  display: none;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.tac-module.is-active .mod-mode {
+  display: inline;
+}
+
+/* ----- Close (×) button ----- */
+.mod-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease, color 200ms ease, border-color 200ms ease, transform 200ms ease;
+}
+
+.tac-module.is-active .mod-close {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mod-close:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+  transform: scale(1.08);
+}
+
+/* ----- Idle breath: a barely-perceptible elevation pulse ----- */
+@keyframes tac-breathe {
+  0%, 100% {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 14px 36px -14px rgba(0, 0, 0, 0.10);
+  }
+  50% {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.05),
+      0 20px 48px -14px rgba(0, 0, 0, 0.14);
+  }
+}
+.tac-library:not(.has-active) .tac-module {
+  animation: tac-breathe 4.2s ease-in-out infinite;
+  animation-delay: var(--breathe-delay);
+}
+
+.tac-hint {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.tac-hint .en {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tac-hint .vi {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--muted-2);
+}
+
+/* tac-link: plain text link with a 1px underline — not a pill. */
+.tac-link {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  transition: opacity var(--t-fast);
+}
+
+.tac-link .en {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tac-link .vi {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.tac-link:hover {
+  opacity: 0.7;
+}
+
+/* ---------- Pillars ---------- */
+/* Pillars: sharp white slabs divided by a 1px vertical rule,
+   each titled with a thin top hairline. No rounded corners, no
+   background tint, no lift on hover — the content does the work. */
+.pillars {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--pad) clamp(72px, 10vw, 140px);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.pillar {
+  position: relative;
+  padding: clamp(40px, 5vw, 72px) clamp(28px, 4vw, 56px);
+  background: #ffffff;
+  border-radius: 0;
+}
+
+.pillar + .pillar {
+  border-left: 1px solid var(--line);
+}
+
+.pillar h2 {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 28px;
+  line-height: 1.1;
+}
+
+.pillar h2 .en {
+  font-weight: 800;
+  font-size: clamp(26px, 2.6vw, 34px);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.pillar h2 .vi {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 6px;
+}
+
+.pillar-body {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  max-width: 48ch;
+}
+
+.pillar-body-vi {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  font-style: italic;
+  max-width: 52ch;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 32px var(--pad) 48px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.footer .en {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.footer .vi {
+  font-style: italic;
+  color: var(--muted-2);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) {
+  .topbar {
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    row-gap: 12px;
+  }
+
+  .topnav {
+    grid-column: 1 / -1;
+    justify-self: start;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .topnav a:first-child { margin-left: 0; }
+
+  .brand-vi { font-size: 13px; }
+  .brand-en { font-size: 11px; }
+
+  .pillars {
+    grid-template-columns: 1fr;
+  }
+
+  .pillar + .pillar {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+}

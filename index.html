@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manhattan Academy of Music and Language</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,600;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/png" href="maml-logo.png" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="maml-logo.png" alt="MAML logo" class="brand-logo" />
+      <span class="brand-name">
+        <span class="brand-en">Manhattan Academy of Music and Language</span>
+        <span class="brand-vi">Học Viện Âm Nhạc & Ngôn Ngữ Manhattan</span>
+      </span>
+    </a>
+    <nav class="topnav">
+      <a href="#mission">Mission</a>
+      <a href="#vision">Vision</a>
+      <a href="#apps">Apps</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">
+        <span class="en">A non-profit organization</span>
+        <span class="vi">Một tổ chức phi lợi nhuận</span>
+      </p>
+
+      <!-- Tôi Ăn Cơm trailer: cards rendered from modules.js -->
+      <div class="tac-stage" aria-label="Tôi Ăn Cơm trailer">
+
+        <!-- Empty container — script.js fills it from window.MODULES -->
+        <div class="tac-library" id="tacLibrary"></div>
+
+        <p class="tac-hint" id="tacHint">
+          <span class="en"></span>
+          <span class="vi"></span>
+        </p>
+
+      </div>
+    </section>
+
+    <!-- Card markup template — cloned once per module by script.js -->
+    <template id="tacModuleTemplate">
+      <article class="tac-module" tabindex="0">
+        <button type="button" class="mod-close" aria-label="Close">×</button>
+        <header class="mod-head">
+          <span class="mod-kind">SWAP</span>
+          <span class="mod-target"></span>
+        </header>
+        <div class="mod-sentence">
+          <span class="mod-side mod-left"></span>
+          <span class="mod-word-active"></span>
+          <span class="mod-side mod-right"></span>
+        </div>
+        <footer class="mod-foot">
+          <span class="mod-foot-en"></span>
+          <span class="mod-foot-vi"></span>
+          <span class="mod-mode"></span>
+        </footer>
+      </article>
+    </template>
+
+    <section class="pillars">
+      <article id="mission" class="pillar">
+        <h2>
+          <span class="en">Mission</span>
+          <span class="vi">Sứ mệnh</span>
+        </h2>
+        <p class="pillar-body">
+          Making high-quality music education and language more accessible
+          by means of group classes, folk musics, and digital technologies.
+        </p>
+        <p class="pillar-body-vi">
+          Mở rộng cánh cửa giáo dục âm nhạc và ngôn ngữ chất lượng cao
+          thông qua lớp học nhóm, âm nhạc dân gian, và công nghệ số.
+        </p>
+      </article>
+
+      <article id="vision" class="pillar">
+        <h2>
+          <span class="en">Vision</span>
+          <span class="vi">Tầm nhìn</span>
+        </h2>
+        <p class="pillar-body">
+          Creating and implementing family- and community-centered
+          curricula, apps, and research at the essence of our organization.
+        </p>
+        <p class="pillar-body-vi">
+          Kiến tạo và triển khai giáo trình, ứng dụng, và nghiên cứu
+          lấy gia đình và cộng đồng làm trung tâm.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="en">© 2026 Manhattan Academy of Music and Language · A 501(c)(3) non-profit</span>
+    <span class="vi">Học Viện Âm Nhạc & Ngôn Ngữ Manhattan</span>
+  </footer>
+
+  <script src="data/kinship.js"></script>
+  <script src="data/an.js"></script>
+  <script src="data/com.js"></script>
+  <script src="modules.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
