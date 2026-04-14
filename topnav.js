@@ -148,3 +148,30 @@
     render();
   }
 })();
+
+// Giấy gió parallax — the paper (painted by body::before) drifts up gently
+// as the page scrolls down. Factor is small so it's a breath of movement,
+// not a theme-park effect. Clamped so long scroll pages never run the paper
+// off the oversized pseudo-element (see top/bottom inset in styles.css).
+// Runs everywhere including iOS, because we translate a `position: fixed`
+// element instead of relying on `background-attachment: fixed` (which
+// Safari mobile silently drops).
+(function () {
+  const FACTOR = 0.12;   // fraction of scrollY applied as upward drift
+  const MAX    = 140;    // px — stays inside the 160px pseudo-element slack
+  let ticking = false;
+
+  function update() {
+    const y = Math.max(-MAX, -window.scrollY * FACTOR);
+    document.body.style.setProperty("--paper-y", y + "px");
+    ticking = false;
+  }
+  function onScroll() {
+    if (!ticking) {
+      requestAnimationFrame(update);
+      ticking = true;
+    }
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  update();
+})();

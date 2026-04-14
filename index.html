@@ -13,10 +13,24 @@
 
   <main>
     <section id="tac" class="hero">
-      <p class="eyebrow">
-        <span class="en">Learn Vietnamese by the thousand ways to say "Tôi Ăn Cơm."</span>
-        <span class="vi">Học tiếng Việt qua ngàn cách nói "Tôi Ăn Cơm."</span>
-      </p>
+      <div class="tac-blurb">
+        <div class="blurb-line">
+          <span class="en">Three words, three worlds.</span>
+          <span class="vi">Ba chữ, ba thế giới.</span>
+        </div>
+        <div class="blurb-line">
+          <span class="en">"Tôi" is who you are to whoever listens.</span>
+          <span class="vi">"Tôi" là bạn với người đang nghe.</span>
+        </div>
+        <div class="blurb-line">
+          <span class="en">"Ăn" is how you live — how you speak, dress, suffer, behave.</span>
+          <span class="vi">"Ăn" là cách sống — cách nói, cách mặc, cách chịu đòn, cách ăn ở.</span>
+        </div>
+        <div class="blurb-line">
+          <span class="en">"Cơm" is soil, spirit, and the wife you always come home to.</span>
+          <span class="vi">"Cơm" là đất, là hồn, là người vợ bạn luôn quay về.</span>
+        </div>
+      </div>
 
       <!-- Tôi Ăn Cơm trailer: cards rendered from modules.js -->
       <div class="tac-stage" aria-label="Tôi Ăn Cơm trailer">
@@ -36,10 +50,10 @@
     <template id="tacModuleTemplate">
       <article class="tac-module" tabindex="0">
         <button type="button" class="mod-close" aria-label="Close">×</button>
-        <header class="mod-head">
-          <span class="mod-kind">SWAP</span>
-          <span class="mod-target"></span>
-        </header>
+        <p class="mod-caption">
+          <span class="en"></span>
+          <span class="vi"></span>
+        </p>
         <div class="mod-sentence">
           <span class="mod-side mod-left"></span>
           <span class="mod-word-active"></span>

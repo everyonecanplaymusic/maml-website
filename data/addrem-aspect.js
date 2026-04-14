@@ -138,12 +138,6 @@ function _parseRenderThoiGian(arr) {
 }
 
 function deriveThoiGianBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm", hit: true }],
-    en: "Bare verb. No time, no aspect — just the neutral act.",
-    vi: "Động từ trần. Không thời gian, không thể — chỉ hành động đơn thuần.",
-  };
 
   const items = BANK_THOI_GIAN.items.map(it => ({
     word:     it.vi,
@@ -152,7 +146,7 @@ function deriveThoiGianBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 /* Back-compat: the module registry still imports ASPECT_BANK_DERIVED,

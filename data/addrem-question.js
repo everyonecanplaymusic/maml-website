@@ -176,13 +176,6 @@ function _parseRenderQuestion(arr) {
 }
 
 function deriveQuestionBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm?", hit: true }],
-    en: "Bare question — rising intonation alone, no overt marker.",
-    vi: "Câu hỏi trần — chỉ cần lên giọng cuối câu, không chữ đánh dấu.",
-  };
-
   const items = BANK_QUESTION.items.map(it => ({
     word:     it.vi,
     segments: _parseRenderQuestion(it.render),
@@ -190,7 +183,7 @@ function deriveQuestionBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 window.BANK_QUESTION         = BANK_QUESTION;

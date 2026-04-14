@@ -166,6 +166,20 @@
     return out;
   }
 
+  // ----- Caption filler -----
+  // Each module carries a bilingual teaser caption shown at the
+  // top of the card, dim-gray italic, intended to make the
+  // learner anticipate what the card reveals. EN and VI live in
+  // module.caption.{en,vi}; both go through lcDisplay so the
+  // lowercase rule + proper-noun preservation applies uniformly.
+  function fillCaption(node, module) {
+    const cap = module.caption || {};
+    const en = node.querySelector(".mod-caption .en");
+    const vi = node.querySelector(".mod-caption .vi");
+    if (en) en.textContent = lcDisplay(cap.en || "");
+    if (vi) vi.textContent = lcDisplay(cap.vi || "");
+  }
+
   // ----- Segment rendering helper -----
   // ADD cards describe each bank entry as an array of segments:
   //   [{ text: "tôi",    hit: false },
@@ -221,13 +235,10 @@
       node.dataset.id   = module.id;
       node.dataset.type = module.type;
 
-      node.querySelector(".mod-kind").textContent   = "SWAP";
-      node.querySelector(".mod-target").textContent = `"${lcDisplay(module.target)}"`;
+      fillCaption(node, module);
       node.querySelector(".mod-left").textContent   = lcDisplay(module.sentence[0]);
       node.querySelector(".mod-word-active").textContent = lcDisplay(module.sentence[1]);
       node.querySelector(".mod-right").textContent  = lcDisplay(module.sentence[2]);
-      node.querySelector(".mod-foot-en").textContent = lcDisplay(module.role.en);
-      node.querySelector(".mod-foot-vi").textContent = lcDisplay(module.role.vi);
 
       return node;
     },
@@ -240,11 +251,8 @@
 
       const first = module.bank[0];         // canonical: usually the bare sentence
 
-      node.querySelector(".mod-kind").textContent   = "ADD";
-      node.querySelector(".mod-target").textContent = `"${lcDisplay(module.target)}"`;
+      fillCaption(node, module);
       renderSegments(node.querySelector(".mod-word-active"), first.segments);
-      node.querySelector(".mod-foot-en").textContent = lcDisplay(module.role.en);
-      node.querySelector(".mod-foot-vi").textContent = lcDisplay(module.role.vi);
 
       return node;
     },
@@ -455,8 +463,25 @@
   let autoDemoSwapsLeft = 0;
 
   // ----- Mode indicator helpers -----
+  // On desktop the mode text distinguishes auto (cycling on its
+  // own) from user (manual tap to advance). On mobile that
+  // distinction is noise — the user just needs to know the card
+  // is tappable, so we collapse both modes into a single
+  // "tap to swap →" hint. `isMobile()` is re-evaluated each call
+  // so a browser-window resize flips behavior cleanly.
+  const mobileMQ = window.matchMedia("(max-width: 1024px)");
+  const isMobile = () => mobileMQ.matches;
+
   function setModeIndicator(card, mode) {
     if (!card.modeEl) return;
+    if (!mode) {
+      card.modeEl.textContent = "";
+      return;
+    }
+    if (isMobile()) {
+      card.modeEl.textContent = "tap to swap →";
+      return;
+    }
     if (mode === "auto")      card.modeEl.textContent = "auto · 4s · tap to control";
     else if (mode === "user") card.modeEl.textContent = "tap card to swap →";
     else                      card.modeEl.textContent = "";

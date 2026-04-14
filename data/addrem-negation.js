@@ -188,12 +188,6 @@ function _parseRender(arr) {
 }
 
 function deriveNegationBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm", hit: true }],
-    en: "Plain affirmative. No negation — the state each item departs from.",
-    vi: "Câu khẳng định. Không phủ định — trạng thái gốc mà mỗi mục rẽ ra từ đó.",
-  };
 
   const items = BANK_NEGATION.groups.flatMap(g => g.items).map(it => ({
     word:     it.vi,
@@ -202,7 +196,7 @@ function deriveNegationBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 window.BANK_NEGATION         = BANK_NEGATION;

@@ -35,10 +35,13 @@
   --t-med:  360ms cubic-bezier(.2, .7, .2, 1);
 }
 
+html {
+  background-color: var(--bg);
+}
+
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--ink);
   font-family: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
   font-weight: 400;
@@ -46,6 +49,49 @@ html, body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: transparent;
+}
+
+/* Giấy gió trắng — real photographed paper, one piece covering the viewport
+   (no tiling). Painted by a fixed pseudo-element behind all content so it
+   can drift independently of scroll (JS adds a gentle parallax via
+   --paper-y). The pseudo is oversized vertically (top/bottom inset) to give
+   room for the translation without exposing edges. `background-attachment:
+   fixed` is avoided because iOS Safari drops it and the paper starts
+   scrolling in lockstep with text — `position: fixed` + `transform` works
+   everywhere. Inner white slabs (cards, pillars, topbar) stay solid so
+   type remains crisp. */
+body::before {
+  content: "";
+  position: fixed;
+  top: -200px;
+  bottom: -200px;
+  left: -140px;
+  right: -140px;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    /* ánh kim — cool→warm pearl shimmer, diagonal like light on xà cừ */
+    linear-gradient(
+      118deg,
+      rgba(255, 248, 232, 0.55) 0%,
+      rgba(255, 255, 255, 0) 26%,
+      rgba(232, 240, 255, 0) 52%,
+      rgba(250, 236, 248, 0.42) 78%,
+      rgba(255, 250, 236, 0.38) 100%
+    ),
+    url("paper-giay-gio.jpg");
+  background-repeat: no-repeat, no-repeat;
+  background-size: 100% 100%, cover;
+  background-position: center, center;
+  /* Counter-clockwise tilt to level the natural fiber direction of
+     the photographed sheet. scale(1.20) + expanded inset cover the
+     corner triangles exposed by the 6° rotation. */
+  transform: translate3d(0, var(--paper-y, 0px), 0) rotate(-6deg) scale(1.20);
+  will-change: transform;
 }
 
 a {
@@ -177,28 +223,58 @@ main {
   padding: clamp(4px, 0.8vw, 12px) var(--pad) clamp(56px, 8vw, 96px);
 }
 
-.eyebrow {
+/* ---------- Tôi Ăn Cơm blurb (bilingual verse) ----------
+   Four poetic lines stacked vertically, each line rendered as
+   a 2-column grid with English on the left and Vietnamese on
+   the right. The columns meet at a center gutter — EN
+   right-aligned, VI left-aligned — so the eye can jump across
+   between languages line by line, the way a bilingual poem
+   reads on a facing page. On narrow viewports the two columns
+   collapse into a stacked EN/VI pair, centered. */
+.tac-blurb {
+  max-width: 1100px;
+  margin: 0 auto 26px;
+  padding: 0 var(--pad);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  margin: 0 0 6px;
-  font-size: 13px;
+  gap: 14px;
 }
 
-.eyebrow .en {
-  font-weight: 700;
+.blurb-line {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 4vw, 64px);
+  align-items: baseline;
+}
+
+.blurb-line .en {
+  text-align: right;
+  font-size: clamp(15px, 1.8vw, 20px);
+  font-weight: 500;
   color: var(--ink);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
 }
 
-.eyebrow .vi {
+.blurb-line .vi {
+  text-align: left;
+  font-size: clamp(13px, 1.55vw, 17px);
   font-weight: 400;
-  color: var(--muted-2);
   font-style: italic;
-  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .blurb-line {
+    grid-template-columns: 1fr;
+    gap: 3px;
+    text-align: center;
+  }
+  .blurb-line .en,
+  .blurb-line .vi {
+    text-align: center;
+  }
 }
 
 
@@ -347,25 +423,52 @@ main {
 }
 
 /* ----- Card content ----- */
-.mod-head {
+
+/* Caption — the dim teaser line above the main sentence.
+   Each module owns a bilingual `caption: { en, vi }` that
+   hints at what the card is about to reveal without
+   describing it mechanically. Rendered very faint so the
+   transformed sentence stays the hero; when the card is
+   active we bump opacity slightly so the caption becomes
+   legible but still subordinate. */
+.mod-caption {
+  margin: 0 0 10px;
+  padding: 0;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.mod-kind {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.24em;
-  color: var(--muted-2);
-  text-transform: uppercase;
-}
-
-.mod-target {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--accent);
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
   font-style: italic;
+  line-height: 1.35;
+  color: var(--muted-2);
+  opacity: 0.42;
+}
+
+.mod-caption .en {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+.mod-caption .vi {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted-2);
+}
+
+.tac-module.is-active .mod-caption {
+  opacity: 0.62;
+  margin-bottom: 14px;
+}
+
+.tac-module.is-active .mod-caption .en {
+  font-size: 13px;
+}
+
+.tac-module.is-active .mod-caption .vi {
+  font-size: 12px;
 }
 
 /* Sentence layout is type-aware.
@@ -503,10 +606,6 @@ main {
 }
 
 /* ----- Active-state typographic boost ----- */
-.tac-module.is-active .mod-target {
-  font-size: 20px;
-}
-
 .tac-module.is-active .mod-sentence {
   font-size: clamp(36px, 5vw, 48px);
   margin: 12px 0;
@@ -3019,9 +3118,9 @@ body.code-modal-open {
     transform: none !important;
     transform-style: flat !important;
 
-    width: 300px !important;
-    min-width: 300px !important;
-    max-width: 300px !important;
+    width: 380px !important;
+    min-width: 380px !important;
+    max-width: 380px !important;
     height: auto !important;
     min-height: 220px !important;
     flex: 0 0 auto;
@@ -3041,12 +3140,59 @@ body.code-modal-open {
      which is enough of a signal. The user is looking directly
      at whichever card they tapped. */
   .tac-module.is-active {
-    width: 300px !important;
-    min-width: 300px !important;
-    max-width: 300px !important;
+    width: 380px !important;
+    min-width: 380px !important;
+    max-width: 380px !important;
     padding: 22px 24px !important;
     transform: none !important;
     z-index: 2;
+  }
+
+  /* Sentence font stays BIG on tablet/phone — the sentence is
+     the hero of the card, so we don't scale it down. Instead we
+     let it wrap onto multiple lines when it exceeds the card
+     width. Desktop's nowrap rules (on .mod-sentence and
+     .mod-word-active segments) are relaxed here so flex can
+     break between segments. Card height grows naturally to fit
+     the wrapped content. */
+  .tac-module .mod-sentence,
+  .tac-module.is-active .mod-sentence {
+    font-size: clamp(28px, 3.6vw, 36px) !important;
+    margin: 10px 0 !important;
+    white-space: normal !important;
+    flex-wrap: wrap !important;
+    justify-content: center;
+  }
+
+  .tac-module[data-type="add"] .mod-word-active {
+    flex-wrap: wrap !important;
+    white-space: normal !important;
+    justify-content: center;
+    row-gap: 4px;
+  }
+
+  /* Bump the supporting text (caption teaser, footer nuance,
+     mode indicator) so everything on the card stays readable at
+     arm's length. Desktop defaults are 10-12px which is tight
+     on a phone. */
+  .tac-module .mod-caption .en,
+  .tac-module.is-active .mod-caption .en {
+    font-size: 14px;
+  }
+  .tac-module .mod-caption .vi,
+  .tac-module.is-active .mod-caption .vi {
+    font-size: 13px;
+  }
+  .tac-module .mod-foot-en,
+  .tac-module.is-active .mod-foot-en {
+    font-size: 14px;
+  }
+  .tac-module .mod-foot-vi,
+  .tac-module.is-active .mod-foot-vi {
+    font-size: 12px;
+  }
+  .tac-module .mod-mode {
+    font-size: 11px;
   }
 
   /* Inactive cards while one is active: stay put in the row.
@@ -3063,21 +3209,52 @@ body.code-modal-open {
 }
 
 /* ---------- Trailer: phone-specific carousel sizing ----------
-   Under 640px, shrink cards to 78% viewport so the edge of the
-   next card peeks in — the peek is what tells the user "swipe".
-   Without it the card looks static. */
+   Under 640px we give the card 92vw so the longest sentences
+   (e.g. "làm sao mà tôi ăn cơm được", "chừng nào tôi ăn cơm?")
+   have room to breathe, while still leaving a 4vw peek of the
+   next card on each edge — the peek is the swipe affordance.
+   Font is scaled down further so those long sentences don't
+   overflow. */
 @media (max-width: 640px) {
   .tac-module,
   .tac-module.is-active {
-    width: 78vw !important;
-    min-width: 78vw !important;
-    max-width: 78vw !important;
+    width: 92vw !important;
+    min-width: 92vw !important;
+    max-width: 92vw !important;
+    padding: 20px 22px !important;
+  }
+
+  .tac-module .mod-sentence,
+  .tac-module.is-active .mod-sentence {
+    font-size: clamp(28px, 7.5vw, 40px) !important;
+  }
+
+  /* Phone gets an extra bump for the supporting text so the
+     whole card is legible at arm's length without squinting. */
+  .tac-module .mod-caption .en,
+  .tac-module.is-active .mod-caption .en {
+    font-size: 15px;
+  }
+  .tac-module .mod-caption .vi,
+  .tac-module.is-active .mod-caption .vi {
+    font-size: 14px;
+  }
+  .tac-module .mod-foot-en,
+  .tac-module.is-active .mod-foot-en {
+    font-size: 15px;
+  }
+  .tac-module .mod-foot-vi,
+  .tac-module.is-active .mod-foot-vi {
+    font-size: 13px;
+  }
+  .tac-module .mod-mode {
+    font-size: 12px;
   }
 
   .tac-library {
-    padding: 18px 12px 28px;
+    padding: 18px 4vw 28px;
     gap: 10px;
-    scroll-padding-inline: 12px;
+    scroll-padding-inline: 4vw;
   }
 }
 

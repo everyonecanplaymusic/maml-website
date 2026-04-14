@@ -138,12 +138,6 @@ function _parseRenderComState(arr) {
 }
 
 function deriveComStateBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm", hit: true }],
-    en: "Plain rice. No qualifier — the default bowl.",
-    vi: "Cơm trần. Không trạng thái, không biến thể — nồi cơm mặc định.",
-  };
 
   const items = BANK_COM_TRANG_THAI.items.map(it => ({
     word:     it.vi,
@@ -152,7 +146,7 @@ function deriveComStateBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 window.BANK_COM_TRANG_THAI   = BANK_COM_TRANG_THAI;

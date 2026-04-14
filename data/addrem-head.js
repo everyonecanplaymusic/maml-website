@@ -107,12 +107,6 @@ function _parseRenderHead(arr) {
 }
 
 function deriveHeadBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm", hit: true }],
-    en: "No opener. Straight into the sentence.",
-    vi: "Không chữ mở. Vào thẳng câu.",
-  };
 
   const items = BANK_HEAD.items.map(it => ({
     word:     it.vi,
@@ -121,7 +115,7 @@ function deriveHeadBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 window.BANK_HEAD         = BANK_HEAD;

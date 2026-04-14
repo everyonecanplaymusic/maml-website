@@ -114,12 +114,6 @@ function _parseRenderAnLe(arr) {
 }
 
 function deriveAnLeBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm", hit: true }],
-    en: "Just eating — no event attached. The default bowl before any ceremony.",
-    vi: "Ăn trần — chưa có dịp lễ nào. Bữa cơm mặc định trước mọi nghi thức.",
-  };
 
   const items = BANK_AN_LE.items.map(it => ({
     word:     it.vi,
@@ -128,7 +122,7 @@ function deriveAnLeBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 window.BANK_AN_LE          = BANK_AN_LE;

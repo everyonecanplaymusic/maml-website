@@ -91,8 +91,6 @@ const BANK_COM = {
     // Đặc biệt
     { vi: "bụng",    nuance_vi: "Lấy cơ thể làm đơn vị. No nê vật vã.",
                      nuance_en: "Using the belly as unit. Stuffed, bloated." },
-    { vi: "chực",    nuance_vi: "Ăn chực = ăn ké nhà người ta.",
-                     nuance_en: "Freeloading — eating at someone else's house." },
   ],
   metaphors: [
     { surface: "miếng cơm",      metaphor: "Sinh tồn cốt lõi",

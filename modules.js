@@ -23,8 +23,15 @@
           marked `hit: true` get accent color — supports pairs
           like "có ... đâu" where both halves are highlighted.
 
-   The `target` label shows in the card header (e.g. SWAP "tôi"
-   or ADD "thời gian"). The `role.en/vi` shows as footer meta.
+   Each module carries a `caption: { en, vi }` pair — a dim
+   teaser line shown above the transformed sentence, meant to
+   make the learner anticipate what's coming. Keep it short
+   (6-10 words), end with "..." to leave it hanging, and prefer
+   a hint or rhetorical question over a mechanical description.
+
+   The `target` label is kept for legacy reference but is no
+   longer displayed. The `role.en/vi` also stays for reference
+   but has been replaced on the card by `caption`.
    Future types ("overlapping", …) add their own renderer/
    behavior pair in script.js.
    ============================================================ */
@@ -39,6 +46,10 @@ window.MODULES = [
     slot:  "toi",
     target:   "tôi",
     sentence: ["", "tôi", "ăn cơm"],
+    caption: {
+      en: 'who can "I" be in "tôi ăn cơm"...',
+      vi: '"tôi" trong "tôi ăn cơm" có thể là ai...',
+    },
     role: {
       en: "the one speaking",
       vi: "người đang nói",
@@ -54,6 +65,10 @@ window.MODULES = [
     slot:  "an",
     target:   "ăn",
     sentence: ["tôi", "ăn", "cơm"],
+    caption: {
+      en: '"ăn" has a big family...',
+      vi: '"ăn" có họ hàng đông lắm...',
+    },
     role: {
       en: "how it is taken in",
       vi: "cách đưa vào miệng",
@@ -69,6 +84,10 @@ window.MODULES = [
     slot:  "com",
     target:   "cơm",
     sentence: ["tôi ăn", "cơm", ""],
+    caption: {
+      en: 'more than "cơm" on the table...',
+      vi: 'không chỉ "cơm" trên mâm đâu...',
+    },
     role: {
       en: "what is on the plate",
       vi: "thứ trên bàn ăn",
@@ -90,6 +109,10 @@ window.MODULES = [
     slot:  "luongtu",
     target:   "lượng từ",
     sentence: ["tôi ăn", "hạt", "cơm"],
+    caption: {
+      en: "a grain, a bowl, a lifetime...",
+      vi: "một hạt, một bát, hay một đời...",
+    },
     role: {
       en: "how the rice is measured",
       vi: "đơn vị đong đếm cơm",
@@ -106,6 +129,10 @@ window.MODULES = [
     type:  "add",
     slot:  "head",
     target: "mở lời",
+    caption: {
+      en: 'who\'s listening to "tôi ăn cơm"...',
+      vi: 'ai đang nghe "tôi ăn cơm"...',
+    },
     role: {
       en: "how the turn begins",
       vi: "cách mở lời",
@@ -122,6 +149,10 @@ window.MODULES = [
     type:  "add",
     slot:  "thoi-gian",
     target: "thời gian",
+    caption: {
+      en: 'when does "tôi ăn cơm" happen...',
+      vi: '"tôi ăn cơm" vào lúc nào...',
+    },
     role: {
       en: "when the action sits in time",
       vi: "lúc của hành động",
@@ -138,6 +169,10 @@ window.MODULES = [
     type:  "add",
     slot:  "final",
     target: "tiểu từ cuối",
+    caption: {
+      en: "one last word, a whole attitude...",
+      vi: "một chữ cuối, cả một thái độ...",
+    },
     role: {
       en: "the mood at the end",
       vi: "sắc thái ở cuối câu",
@@ -154,6 +189,10 @@ window.MODULES = [
     type:  "add",
     slot:  "question",
     target: "câu hỏi",
+    caption: {
+      en: '"tôi ăn cơm" — or not yet...',
+      vi: '"tôi ăn cơm" — rồi chưa...',
+    },
     role: {
       en: "how it turns into a question",
       vi: "chữ đánh dấu nghi vấn",
@@ -170,6 +209,10 @@ window.MODULES = [
     type:  "add",
     slot:  "negation",
     target: "phủ định",
+    caption: {
+      en: 'how many shades of "not eating"...',
+      vi: 'có bao nhiêu kiểu "không ăn"...',
+    },
     role: {
       en: "shades of saying no",
       vi: "các kiểu nói 'không'",
@@ -187,6 +230,10 @@ window.MODULES = [
     type:  "add",
     slot:  "modal",
     target: "tâm thế",
+    caption: {
+      en: "by choice, by duty, or by grace...",
+      vi: "ăn vì thích, vì phải, hay vì được...",
+    },
     role: {
       en: "the stance behind the act",
       vi: "tâm thế trước hành động",
@@ -203,6 +250,10 @@ window.MODULES = [
     type:  "add",
     slot:  "com-state",
     target: "cơm nào",
+    caption: {
+      en: "which rice? cooked by whom...",
+      vi: "cơm nào? của ai nấu...",
+    },
     role: {
       en: "which bowl, whose cooking",
       vi: "nồi cơm nào, của ai nấu",
@@ -221,6 +272,10 @@ window.MODULES = [
     type:  "add",
     slot:  "an-mo",
     target: "nhân cách",
+    caption: {
+      en: "eat, speak, dress, live — a whole character...",
+      vi: "ăn, nói, ở, mặc — cả con người...",
+    },
     role: {
       en: "how one eats, speaks, dresses, lives",
       vi: "cách ăn, nói, mặc, ở — cả nhân cách",
@@ -239,6 +294,10 @@ window.MODULES = [
     type:  "add",
     slot:  "an-bong",
     target: "không phải ăn",
+    caption: {
+      en: '"ăn" that isn\'t chewing...',
+      vi: '"ăn" mà không nhai bằng miệng...',
+    },
     role: {
       en: "'ăn' with no mouth involved",
       vi: "'ăn' mà không bằng miệng",
@@ -259,6 +318,10 @@ window.MODULES = [
     type:  "add",
     slot:  "an-le",
     target: "dịp",
+    caption: {
+      en: 'Tết, weddings, death days — also "ăn"...',
+      vi: 'Tết, cưới, giỗ — cũng là "ăn"...',
+    },
     role: {
       en: "'ăn' wrapping a whole occasion",
       vi: "'ăn' gói cả một dịp",

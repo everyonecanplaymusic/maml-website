@@ -282,6 +282,12 @@ const BANK_AN_BONG = {
       nuance_vi: "Freeload không biết xấu hổ.",
       nuance_en: "Freeloading shamelessly." },
 
+    { vi: "ăn chực",
+      render: ["tôi ăn", "+chực"],
+      en: "to mooch a meal at someone's house",
+      nuance_vi: "Ăn ké nhà người ta. Không phải đơn vị đong cơm — mà là cái kiểu bám bàn ăn nhà khác.",
+      nuance_en: "Eating at someone else's table uninvited. Not a measure of rice — a way of showing up at other people's meals." },
+
     { vi: "ăn bòn",
       render: ["tôi ăn", "+bòn"],
       en: "to nibble away at resources",
@@ -312,12 +318,6 @@ function _parseRenderAnBong(arr) {
 }
 
 function deriveAnBongBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm", hit: true }],
-    en: "Literal 'ăn' — eating with the mouth, the baseline before metaphor.",
-    vi: "'Ăn' nghĩa đen — nhai bằng miệng, gốc trước khi hoá nghĩa bóng.",
-  };
 
   const items = BANK_AN_BONG.items.map(it => ({
     word:     it.vi,
@@ -326,7 +326,7 @@ function deriveAnBongBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 window.BANK_AN_BONG          = BANK_AN_BONG;

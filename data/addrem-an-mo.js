@@ -126,12 +126,6 @@ function _parseRenderAnMo(arr) {
 }
 
 function deriveAnMoBank() {
-  const bare = {
-    word: "",
-    segments: [{ text: "tôi ăn cơm", hit: true }],
-    en: "Bare 'ăn' — just the act of eating, no life-judgment attached.",
-    vi: "'Ăn' trần — chỉ là hành động ăn, chưa đánh giá nhân cách.",
-  };
 
   const items = BANK_AN_MO.items.map(it => ({
     word:     it.vi,
@@ -140,7 +134,7 @@ function deriveAnMoBank() {
     vi:       it.nuance_vi || "",
   }));
 
-  return [bare, ...items];
+  return items;
 }
 
 window.BANK_AN_MO          = BANK_AN_MO;
