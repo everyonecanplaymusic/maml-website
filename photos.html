@@ -477,7 +477,14 @@
         }
       }
 
+      // Quick viewport check — window.scrollTo inside rAF loops
+      // fight iOS momentum scrolling and feel jerky on phones.
+      // Skip the auto reveal + drift for narrow viewports; the
+      // viewer can still scroll normally.
+      const isNarrowViewport = () => window.innerWidth <= 760;
+
       function driftRackToward(file) {
+        if (isNarrowViewport()) return;
         cancelDrift();
         const item = itemByFile[file];
         if (!item) return;
@@ -680,6 +687,18 @@
         manualUntil = 0;
         inScrollPhase = false;
 
+        // Kick off decoding of every slide in the group up front —
+        // fire-and-forget. On mobile, 2000px JPEG decode can take
+        // 100–300ms per image, enough to show the LQIP blur bg for
+        // a beat before the real photo paints in. Starting decode
+        // at cycle-start gives the browser the whole zoom-in +
+        // dwell to finish them, so by the time the user reaches
+        // slide k, its bitmap is already ready to paint.
+        slideEls.forEach((el) => {
+          const im = el.querySelector(".ps-img");
+          if (im && typeof im.decode === "function") im.decode().catch(() => {});
+        });
+
         // Spotlight group members. Dim everything else.
         items.forEach((el) => {
           const f = el.dataset.file;
@@ -773,6 +792,10 @@
           if (cycleCurrentK >= photos.length - 1) break;
           const next = cycleCurrentK + 1;
           await decoded(slideEls[next].querySelector(".ps-img"));
+          // Ensure the decoded bitmap has been composited BEFORE
+          // we start the scroll transition — otherwise mobile
+          // paints the LQIP bg for a frame, then the photo pops in.
+          await new Promise((r) => requestAnimationFrame(() => r()));
           if (exitRequested) break;
           if (manualUntil > Date.now()) continue; // user clicked during decode
           stageTrack.style.transition = "transform " + DUR_SCROLL + "ms " + CURVE_SCROLL;
@@ -864,6 +887,7 @@
       // ends, no jerk at start or stop. Cancels on any user
       // input so we don't fight intent.
       function initialReveal() {
+        if (isNarrowViewport()) return;
         const startY = window.scrollY || 0;
         const rackRect = rack.getBoundingClientRect();
         const targetY = startY + rackRect.top - 24;
@@ -892,10 +916,16 @@
       function startCycle() {
         if (started) return;
         started = true;
-        // Reveal scroll first, then let the cycle auto-start so
-        // the zoom-in lands on a photo already in view.
-        setTimeout(initialReveal, 600);
-        setTimeout(cycle, 3400);
+        // On desktop: reveal-scroll first, let the cycle start
+        // AFTER the scroll finishes so the zoom-in lands on a
+        // photo already in view. On narrow viewports the reveal
+        // is disabled, so the cycle can begin sooner.
+        if (isNarrowViewport()) {
+          setTimeout(cycle, 1000);
+        } else {
+          setTimeout(initialReveal, 600);
+          setTimeout(cycle, 3400);
+        }
       }
       if (document.readyState === "complete") {
         startCycle();

@@ -3809,4 +3809,39 @@ body.code-modal-open {
   .ps-cap .pa-vi {
     font-size: 12.5px;
   }
+
+  /* Phone: 91 images each with CSS `filter` + transition is
+     catastrophically slow on iOS Safari when spotlight toggles —
+     every image has to re-rasterize. Snap state changes instead
+     of transitioning them, and drop the default filter so the
+     GPU just paints the bitmap. Hover transforms are pointless
+     on touch anyway. */
+  .pa-item {
+    transition: opacity 260ms ease;
+  }
+
+  .pa-img {
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+
+  .pa-item:hover:not(.is-dimmed):not(.is-spotlighted) .pa-img {
+    filter: none;
+    transform: none;
+  }
+
+  .pa-item.is-dimmed .pa-img,
+  .pa-item.is-spotlighted .pa-img {
+    filter: none;
+  }
+
+  .pa-cap {
+    transition: opacity 260ms ease;
+    transform: none;
+  }
+
+  .pa-item.is-spotlighted .pa-cap {
+    transform: none;
+  }
 }
