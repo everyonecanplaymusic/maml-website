@@ -3631,6 +3631,19 @@ body.code-modal-open {
   -webkit-user-drag: none;
   display: block;
   z-index: 1;
+  /* Start invisible and crossfade in once the bitmap is loaded
+     + uploaded to GPU. Without this, mobile Safari shows the
+     cheap LQIP background while the 2000px photo is still
+     being rasterized — you see a blurred backdrop then a hard
+     pop when the photo finally paints. The fade smooths that
+     into a progressive reveal. */
+  opacity: 0;
+  transition: opacity 380ms ease-out;
+  will-change: opacity;
+}
+
+.ps-slide.is-ready .ps-img {
+  opacity: 1;
 }
 
 .ps-cap {

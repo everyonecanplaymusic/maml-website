@@ -324,6 +324,19 @@
         img.alt = "";
         img.decoding = "async";
         img.draggable = false;
+        // Flip .is-ready on the slide the moment the bitmap is
+        // available — CSS fades the crisp photo in over the
+        // LQIP blur backdrop. If it's already cached (re-entered
+        // a previous cycle), flip immediately.
+        if (img.complete && img.naturalWidth > 0) {
+          slide.classList.add("is-ready");
+        } else {
+          img.addEventListener(
+            "load",
+            () => slide.classList.add("is-ready"),
+            { once: true }
+          );
+        }
         slide.appendChild(img);
         const cap = document.createElement("figcaption");
         cap.className = "ps-cap";
@@ -494,7 +507,13 @@
         const dy = targetY - startY;
         if (Math.abs(dy) < 4) return;
 
-        const dur = 3800;
+        // Distance-proportional duration: a tiny hop doesn't need
+        // 4 seconds, and a page-scale scroll shouldn't be forced
+        // into the same window. 1.1ms/px, clamped [2200, 5400].
+        const dur = Math.max(
+          2200,
+          Math.min(5400, Math.abs(dy) * 1.1)
+        );
         const t0 = performance.now();
         // ease-in-out cubic: ramp up from rest, ramp down to rest.
         // Symmetric at both ends so the collage never "jerks"
@@ -739,9 +758,17 @@
               startY + (r.top + r.height / 2) - window.innerHeight / 2;
             await new Promise((res) => {
               cancelDrift();
-              const dur = 1000;
-              const t0 = performance.now();
               const dy = targetY - startY;
+              // Duration scales with distance — short hops stay
+              // snappy, long scrolls (common on narrow viewports
+              // where column-count=2 makes the collage very tall)
+              // get more time so the motion doesn't feel like a
+              // rocket. 1.1ms per pixel, clamped to [900, 3200].
+              const dur = Math.max(
+                900,
+                Math.min(3200, Math.abs(dy) * 1.1)
+              );
+              const t0 = performance.now();
               const ease = (t) =>
                 t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
               (function step(now) {
