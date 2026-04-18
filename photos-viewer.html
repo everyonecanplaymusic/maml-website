@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo viewer — MAML admin tool</title>
+<link rel="icon" type="image/png" href="maml-logo.png">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 14px/1.5 -apple-system, "Be Vietnam Pro", sans-serif;
+    background: #0a0a0a;
+    color: #eee;
+    overflow: hidden;
+  }
+  .viewer {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 1fr auto;
+  }
+  .stage {
+    position: relative;
+    background: #0a0a0a;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .stage img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 300 30px/1 -apple-system, "Be Vietnam Pro", sans-serif;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    z-index: 3;
+    -webkit-appearance: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background-color 180ms ease, border-color 180ms ease;
+  }
+  .nav-arrow:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.65);
+  }
+  .nav-arrow.prev { left: 20px; }
+  .nav-arrow.next { right: 20px; }
+  .progress {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 3;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    font: 11px/1 ui-monospace, Menlo, monospace;
+    letter-spacing: 0.2em;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress .done-chip {
+    color: #7cff8e;
+    font-size: 10px;
+  }
+  .top-bar {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 3;
+    display: flex;
+    gap: 8px;
+  }
+  .top-bar button {
+    padding: 8px 14px;
+    font: 12px/1 inherit;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .top-bar button.primary {
+    background: #fff;
+    color: #0a0a0a;
+    border-color: #fff;
+    font-weight: 600;
+  }
+  .top-bar button:hover { filter: brightness(0.92); }
+
+  .panel {
+    background: #0a0a0a;
+    border-top: 1px solid #1a1a1a;
+    padding: 14px 20px 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .panel .field {
+    display: flex;
+    flex-direction: column;
+  }
+  .panel label {
+    font-size: 10px;
+    color: #777;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .panel textarea {
+    width: 100%;
+    min-height: 58px;
+    padding: 9px 11px;
+    font: 14px/1.45 -apple-system, "Be Vietnam Pro", sans-serif;
+    background: #0f0f0f;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+    resize: vertical;
+  }
+  .panel textarea:focus { border-color: #888; outline: none; }
+  .meta-row {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-bottom: 4px;
+  }
+  .meta-row .filename {
+    font-family: ui-monospace, Menlo, monospace;
+    color: #555;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 10px;
+  }
+  .meta-row .groups { color: #8aa; }
+  .meta-row .date-exif { color: #7cf; }
+  @media (max-width: 780px) {
+    .panel { grid-template-columns: 1fr; gap: 10px; }
+    .panel textarea { min-height: 44px; }
+    .nav-arrow { width: 44px; height: 44px; font-size: 22px; }
+    .nav-arrow.prev { left: 10px; }
+    .nav-arrow.next { right: 10px; }
+  }
+
+  .hint {
+    color: #666;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="viewer">
+  <div class="stage" id="stage">
+    <img id="pic" alt="" />
+    <div class="progress">
+      <span id="idx">00 / 00</span>
+      <span class="done-chip" id="doneCount"></span>
+    </div>
+    <div class="top-bar">
+      <button id="exportBtn" class="primary" title="Copy description JSON">Export</button>
+      <button id="skipDoneBtn" title="Jump to next blank">Next blank →</button>
+    </div>
+    <button class="nav-arrow prev" id="prev" aria-label="Previous">‹</button>
+    <button class="nav-arrow next" id="next" aria-label="Next">›</button>
+  </div>
+  <div class="panel">
+    <div class="meta-row">
+      <span id="dateLabel" class="date-exif">—</span>
+      <span id="groupsLabel" class="groups"></span>
+      <span id="fileLabel" class="filename"></span>
+      <span class="hint">← → navigate · tab through fields · export copies JSON</span>
+    </div>
+    <div class="field">
+      <label for="ta-en">English description</label>
+      <textarea id="ta-en" placeholder="what is this photo about?"></textarea>
+    </div>
+    <div class="field">
+      <label for="ta-vi">Mô tả tiếng Việt</label>
+      <textarea id="ta-vi" placeholder="hình này chụp cái gì?"></textarea>
+    </div>
+  </div>
+</div>
+
+<pre id="outBox" style="display:none;position:fixed;inset:40px;padding:20px;background:#111;color:#cde;border:1px solid #333;overflow:auto;z-index:10;white-space:pre-wrap;font:12px/1.5 ui-monospace, Menlo, monospace;border-radius:2px"></pre>
+
+<script src="photos-dates.js"></script>
+<script src="photos.js"></script>
+<script>
+(function () {
+  // Shared key with photos-describe.html so both tools read/write
+  // the same draft — user can describe some here, some in the
+  // list tool, export from either.
+  const STORE_KEY = "photos-describe-draft-v1";
+
+  const files = (window.PHOTO_FILES || []).slice();
+  const dates = window.PHOTO_DATES || {};
+  const inferGroups = window.inferPhotoGroups || (() => []);
+
+  // Sort chronologically — reviewing in time order makes the
+  // context easier to remember.
+  files.sort((a, b) => {
+    const da = dates[a] || "9999-99-99";
+    const db = dates[b] || "9999-99-99";
+    if (da !== db) return da.localeCompare(db);
+    return a.localeCompare(b);
+  });
+
+  let draft = {};
+  try { draft = JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch (e) {}
+
+  let i = 0;
+
+  const pic = document.getElementById("pic");
+  const idxEl = document.getElementById("idx");
+  const doneEl = document.getElementById("doneCount");
+  const fileEl = document.getElementById("fileLabel");
+  const dateEl = document.getElementById("dateLabel");
+  const groupsEl = document.getElementById("groupsLabel");
+  const taEn = document.getElementById("ta-en");
+  const taVi = document.getElementById("ta-vi");
+  const outBox = document.getElementById("outBox");
+
+  function preloadNext() {
+    // Preload the next image so navigating feels instant.
+    const nx = files[(i + 1) % files.length];
+    const prev = files[(i - 1 + files.length) % files.length];
+    [nx, prev].forEach((f) => {
+      const img = new Image();
+      img.src = "photos/" + f;
+    });
+  }
+
+  function render() {
+    const f = files[i];
+    pic.src = "photos/" + f;
+    pic.alt = f;
+    idxEl.textContent = String(i + 1).padStart(2, "0") + " / " + String(files.length).padStart(2, "0");
+    fileEl.textContent = f;
+    dateEl.textContent = dates[f] || "— no exif date —";
+    const gs = inferGroups(f);
+    groupsEl.textContent = gs.join(" · ");
+
+    // Restore draft values for this photo.
+    const d = draft[f] || {};
+    taEn.value = d.en || "";
+    taVi.value = d.vi || "";
+
+    updateDoneChip();
+    preloadNext();
+  }
+
+  function save() {
+    const f = files[i];
+    const en = taEn.value.trim();
+    const vi = taVi.value.trim();
+    if (!en && !vi) {
+      delete draft[f];
+    } else {
+      draft[f] = {};
+      if (en) draft[f].en = en;
+      if (vi) draft[f].vi = vi;
+    }
+    localStorage.setItem(STORE_KEY, JSON.stringify(draft));
+    updateDoneChip();
+  }
+
+  function updateDoneChip() {
+    const done = Object.keys(draft).length;
+    doneEl.textContent = done > 0 ? "✓ " + done + " described" : "";
+  }
+
+  function go(delta) {
+    save();
+    i = (i + delta + files.length) % files.length;
+    render();
+  }
+
+  function nextBlank() {
+    save();
+    for (let step = 1; step <= files.length; step++) {
+      const cand = (i + step) % files.length;
+      if (!draft[files[cand]]) {
+        i = cand;
+        render();
+        return;
+      }
+    }
+    // All described — stay put.
+  }
+
+  document.getElementById("prev").addEventListener("click", () => go(-1));
+  document.getElementById("next").addEventListener("click", () => go(1));
+  document.getElementById("skipDoneBtn").addEventListener("click", nextBlank);
+
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    save();
+    if (Object.keys(draft).length === 0) {
+      alert("No descriptions yet.");
+      return;
+    }
+    const js =
+      "// photos-meta.js — descriptions per photo. Keys are filenames,\n" +
+      "// values are { en, vi } (either key optional).\n" +
+      "window.PHOTO_META = " + JSON.stringify(draft, null, 2) + ";\n";
+    outBox.textContent = js;
+    outBox.style.display = "block";
+    outBox.addEventListener("click", () => { outBox.style.display = "none"; }, { once: true });
+    try {
+      navigator.clipboard.writeText(js);
+      alert("Copied " + Object.keys(draft).length + " descriptions to clipboard. Paste back to integrate. Tap the panel to dismiss.");
+    } catch (e) {
+      alert("Rendered — select + copy manually. Tap to dismiss.");
+    }
+  });
+
+  // Auto-save on typing (debounced) and on blur.
+  let typingTimer = null;
+  function schedSave() {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(save, 400);
+  }
+  taEn.addEventListener("input", schedSave);
+  taVi.addEventListener("input", schedSave);
+  taEn.addEventListener("blur", save);
+  taVi.addEventListener("blur", save);
+
+  // Keyboard: ← → navigate unless we're typing in a textarea.
+  document.addEventListener("keydown", (e) => {
+    const inField = e.target === taEn || e.target === taVi;
+    if (e.key === "ArrowLeft" && !inField) { go(-1); e.preventDefault(); }
+    else if (e.key === "ArrowRight" && !inField) { go(1); e.preventDefault(); }
+    // Cmd/Ctrl + arrows navigate even while typing (hands-on-keys flow)
+    else if ((e.metaKey || e.ctrlKey) && e.key === "ArrowLeft") { go(-1); e.preventDefault(); }
+    else if ((e.metaKey || e.ctrlKey) && e.key === "ArrowRight") { go(1); e.preventDefault(); }
+    else if (e.key === "Escape" && outBox.style.display !== "none") {
+      outBox.style.display = "none";
+    }
+  });
+
+  // Initial render.
+  render();
+})();
+</script>
+</body>
+</html>

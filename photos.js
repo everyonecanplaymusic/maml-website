@@ -1,4 +1,4 @@
-// photos.js — single source of truth for the Photos accordion.
+// photos.js — single source of truth for the Photos collage.
 //
 // The only data here is the filename list (PHOTO_FILES). Captions
 // are derived from the filename at runtime by labelFromFilename(),
@@ -6,8 +6,8 @@
 // has a descriptive name gets a real label; files with only camera
 // codes (img_1607.jpg, dsc4727.jpg) fall back to a minimal label.
 //
-// photos.html builds one .pa-item per entry and the accordion
-// script (inline in photos.html) handles activation + autoplay.
+// photos.html builds one .pa-item per entry and the cycle engine
+// (inline in photos.html) handles spotlight + stage zoom.
 
 window.PHOTO_FILES = [
   "0227161310.jpg",
@@ -124,6 +124,38 @@ function applyViFixes(s) {
   for (const [re, rep] of VI_FIXES) s = s.replace(re, rep);
   return s;
 }
+
+// Infer which thematic groups a photo belongs to by pattern-
+// matching its filename. A single photo can appear in multiple
+// groups (e.g. a 2019 dan-tranh performance at Temple University
+// Philadelphia → "performance" + "philadelphia" + "temple"). The
+// first matched group is treated as the primary for collage
+// clustering. Groups used with <2 photos get filtered out at
+// render time so the cycle never lands on a singleton.
+window.inferPhotoGroups = function inferPhotoGroups(file) {
+  const f = file.toLowerCase();
+  const g = [];
+  if (/ice-breaker|chamber-workshop|class-hosted|classroom/.test(f)) g.push("classroom");
+  if (/pxl_20250126/.test(f)) g.push("classroom");
+  if (/performance|mekong-10th|10th-anniversary|ly-ngua-o|panal-poe|dsc_3842/.test(f)) g.push("performance");
+  if (/dan-tranhs-workshops|students-visit-dan-tranhs/.test(f)) g.push("workshop");
+  if (/presentation|conference|nafosted|global-leader/.test(f)) g.push("conference");
+  if (/lunar-new-year|calligraphy|zoo-petting/.test(f)) g.push("tet");
+  if (/img_1607|img_1608|img_1613|img_1614|img_1617|img_1622|img_1623|img_1626|img_1627|img_1628/.test(f)) g.push("tet");
+  if (/philadelphia|folk-arts-charter/.test(f)) g.push("philadelphia");
+  if (/columbia-university|teachers-college/.test(f)) g.push("columbia");
+  if (/temple-university/.test(f)) g.push("temple");
+  if (/ha-thi-cau|visit-artist|ninh-binh|soulful-vietname/.test(f)) g.push("fieldwork");
+  if (/^team-|features_vietnamprof|research_dsc/.test(f)) g.push("portrait");
+  if (/dan-tranh-shipped|accessory|dan-tranh-hands|dan-tranh-line-up/.test(f)) g.push("instrument");
+  if (/mekong/.test(f)) g.push("mekong");
+  if (/recording-at-computer|multi-cam-recording|dscn457|dscn459|dsc4728|img_8242|poster-of-summer|rehearsal-schedule/.test(f)) g.push("studio");
+  if (/poe-park|poes-park/.test(f)) g.push("poe-park");
+  if (/^img_4(419|534|558|585|619|698|774)$|^img_20251006/.test(f)) g.push("recent");
+  if (/received_|img_2708|att\./.test(f)) g.push("candid");
+  if (g.length === 0) g.push("misc");
+  return g;
+};
 
 // Turn a filename into a caption. The function is intentionally
 // forgiving: descriptive names get a rich caption, generic camera

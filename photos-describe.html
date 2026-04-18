@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Describe Photos — MAML admin tool</title>
+<link rel="icon" type="image/png" href="maml-logo.png">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font: 14px/1.5 -apple-system, "Be Vietnam Pro", sans-serif;
+    background: #0a0a0a;
+    color: #eee;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .intro {
+    color: #aaa;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    max-width: 760px;
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    padding: 14px 0 10px;
+    background: linear-gradient(to bottom, #0a0a0a 70%, rgba(10,10,10,0));
+    z-index: 10;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="text"] {
+    flex: 1 1 240px;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1px solid #333;
+    background: #111;
+    color: #eee;
+    border-radius: 2px;
+    font-family: inherit;
+  }
+  .toolbar label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #aaa;
+  }
+  button {
+    padding: 8px 14px;
+    font: 13px/1.2 inherit;
+    background: #fff;
+    color: #0a0a0a;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.secondary {
+    background: transparent;
+    color: #eee;
+    border-color: #333;
+  }
+  button:hover { filter: brightness(0.93); }
+  .count {
+    color: #777;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 18px;
+    padding: 18px 0;
+    border-bottom: 1px solid #1a1a1a;
+    align-items: start;
+  }
+  .row img {
+    width: 220px;
+    height: 150px;
+    object-fit: cover;
+    background: #111;
+    display: block;
+    border-radius: 2px;
+  }
+  .row.done img { outline: 2px solid #7cff8e; outline-offset: -2px; }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: #777;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .meta .date { color: #aaa; }
+  .meta .groups { color: #688; }
+  .meta .file {
+    font-family: ui-monospace, Menlo, monospace;
+    color: #555;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 10px;
+  }
+  .suggested {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+  .date-row {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .date-row label {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .date-row input[type="date"] {
+    padding: 6px 10px;
+    font: 13px/1.3 inherit;
+    background: #0f0f0f;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+    color-scheme: dark;
+  }
+  .date-row input[type="date"]:focus { border-color: #888; outline: none; }
+  .date-row .exif-flag {
+    font-size: 10px;
+    color: #588;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .date-row .manual-flag {
+    font-size: 10px;
+    color: #c90;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .desc-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 820px) {
+    .desc-pair { grid-template-columns: 1fr; }
+    .row { grid-template-columns: 140px 1fr; }
+    .row img { width: 140px; height: 100px; }
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+  }
+  .field label {
+    font-size: 10px;
+    color: #666;
+    margin-bottom: 3px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .field textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 8px 10px;
+    font: 13px/1.4 -apple-system, "Be Vietnam Pro", sans-serif;
+    background: #0f0f0f;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+    resize: vertical;
+  }
+  .field textarea:focus { border-color: #888; outline: none; }
+  .out-wrap {
+    margin-top: 32px;
+    padding: 16px;
+    background: #0f0f0f;
+    border: 1px solid #222;
+    border-radius: 2px;
+  }
+  .out-wrap h2 {
+    font-size: 14px;
+    margin: 0 0 10px;
+    color: #aaa;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font: 12px/1.5 ui-monospace, Menlo, monospace;
+    color: #cde;
+    max-height: 360px;
+    overflow: auto;
+  }
+</style>
+</head>
+<body>
+
+<h1>Describe photos</h1>
+<p class="intro">
+  Local-only tool — not deployed. For each photo, optionally add
+  an English and/or Vietnamese description. Skip any you're not
+  sure about; only filled entries make it into the export. When
+  done, click <strong>Copy description plan</strong> and paste
+  back — I'll add them to <code>photos-meta.js</code> and wire
+  the captions to use them.
+</p>
+
+<div class="toolbar">
+  <span class="count" id="count"></span>
+  <input type="text" id="filter" placeholder="filter by filename or year (e.g. 2019, pxl, workshop)" />
+  <label><input type="checkbox" id="onlyBlank" /> only blank descriptions</label>
+  <label><input type="checkbox" id="onlyNoDate" /> only missing date</label>
+  <button id="save">Save draft</button>
+  <button id="export">Copy description plan</button>
+  <button class="secondary" id="clear">Clear draft</button>
+</div>
+
+<div id="list"></div>
+
+<div class="out-wrap">
+  <h2>Description plan (JSON for photos-meta.js)</h2>
+  <pre id="out">(click “Copy description plan” to generate)</pre>
+</div>
+
+<script src="photos-dates.js"></script>
+<script src="photos.js"></script>
+<script>
+(function () {
+  const STORE_KEY = "photos-describe-draft-v1";
+  const files = (window.PHOTO_FILES || []).slice();
+  const dates = window.PHOTO_DATES || {};
+  const inferGroups = window.inferPhotoGroups || (() => []);
+  const labelFn = window.labelFromFilename || (() => ({year:"",text:""}));
+
+  // Sort chronologically (by EXIF date if available) to make the
+  // workflow feel sequential: write descriptions in the order
+  // events happened. Undated photos sink to the bottom.
+  files.sort((a, b) => {
+    const da = dates[a] || "9999-99-99";
+    const db = dates[b] || "9999-99-99";
+    if (da !== db) return da.localeCompare(db);
+    return a.localeCompare(b);
+  });
+
+  const list = document.getElementById("list");
+  const countEl = document.getElementById("count");
+  countEl.textContent = files.length + " photos";
+
+  let draft = {};
+  try { draft = JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch (e) {}
+
+  const rows = [];
+
+  files.forEach((file) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.dataset.file = file;
+
+    const img = document.createElement("img");
+    img.src = "photos/" + file;
+    img.alt = "";
+    img.loading = "lazy";
+    row.appendChild(img);
+
+    const right = document.createElement("div");
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const dateVal = dates[file] || "";
+    const lbl = labelFn(file);
+    const groupsVal = inferGroups(file).join(", ");
+    meta.innerHTML =
+      (dateVal ? '<span class="date">' + dateVal + "</span>" : '<span class="date">— no date —</span>') +
+      '<span class="groups">' + groupsVal + "</span>" +
+      '<span class="file">' + file + "</span>";
+    right.appendChild(meta);
+
+    if (lbl.text && !/^frame|^pixel|^\d\d\//.test(lbl.text)) {
+      const sug = document.createElement("div");
+      sug.className = "suggested";
+      sug.textContent = "inferred caption: " + lbl.text;
+      right.appendChild(sug);
+    }
+
+    // Date row — pre-filled from EXIF when available. User can
+    // override or fill in manually for photos that have no EXIF.
+    const dateRow = document.createElement("div");
+    dateRow.className = "date-row";
+    const dateLabel = document.createElement("label");
+    dateLabel.textContent = "Date:";
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    const savedDate = (draft[file] && draft[file].date) || "";
+    const exifDate = dates[file] || "";
+    dateInput.value = savedDate || exifDate || "";
+    const dateFlag = document.createElement("span");
+    if (savedDate && savedDate !== exifDate) {
+      dateFlag.className = "manual-flag";
+      dateFlag.textContent = "manual";
+    } else if (exifDate) {
+      dateFlag.className = "exif-flag";
+      dateFlag.textContent = "exif";
+    } else {
+      dateFlag.className = "manual-flag";
+      dateFlag.textContent = "no exif — please fill";
+    }
+    dateRow.appendChild(dateLabel);
+    dateRow.appendChild(dateInput);
+    dateRow.appendChild(dateFlag);
+    right.appendChild(dateRow);
+
+    dateInput.addEventListener("input", () => {
+      const v = dateInput.value;
+      if (v && v !== exifDate) {
+        dateFlag.className = "manual-flag";
+        dateFlag.textContent = "manual";
+      } else if (v && v === exifDate) {
+        dateFlag.className = "exif-flag";
+        dateFlag.textContent = "exif";
+      } else {
+        dateFlag.className = "manual-flag";
+        dateFlag.textContent = "no exif — please fill";
+      }
+    });
+
+    const pair = document.createElement("div");
+    pair.className = "desc-pair";
+
+    const fieldEn = document.createElement("div");
+    fieldEn.className = "field";
+    const labelEn = document.createElement("label");
+    labelEn.textContent = "English";
+    const taEn = document.createElement("textarea");
+    taEn.placeholder = "e.g. anh-thư at the piano, brooklyn studio session";
+    taEn.value = (draft[file] && draft[file].en) || "";
+    fieldEn.appendChild(labelEn);
+    fieldEn.appendChild(taEn);
+
+    const fieldVi = document.createElement("div");
+    fieldVi.className = "field";
+    const labelVi = document.createElement("label");
+    labelVi.textContent = "Tiếng Việt";
+    const taVi = document.createElement("textarea");
+    taVi.placeholder = "ví dụ: anh-thư đàn piano, studio brooklyn";
+    taVi.value = (draft[file] && draft[file].vi) || "";
+    fieldVi.appendChild(labelVi);
+    fieldVi.appendChild(taVi);
+
+    pair.appendChild(fieldEn);
+    pair.appendChild(fieldVi);
+    right.appendChild(pair);
+
+    function update() {
+      if (taEn.value.trim() || taVi.value.trim() || (dateInput.value && dateInput.value !== exifDate)) {
+        row.classList.add("done");
+      } else {
+        row.classList.remove("done");
+      }
+    }
+    taEn.addEventListener("input", update);
+    taVi.addEventListener("input", update);
+    dateInput.addEventListener("input", update);
+    update();
+
+    row.appendChild(right);
+    list.appendChild(row);
+    rows.push({ row, taEn, taVi, dateInput, file, exifDate });
+  });
+
+  function applyFilter() {
+    const q = document.getElementById("filter").value.trim().toLowerCase();
+    const onlyBlank = document.getElementById("onlyBlank").checked;
+    const onlyNoDate = document.getElementById("onlyNoDate").checked;
+    rows.forEach(({ row, taEn, taVi, dateInput, file }) => {
+      const d = (dates[file] || "").toLowerCase();
+      const match = !q || file.toLowerCase().includes(q) || d.includes(q);
+      const blank = !taEn.value.trim() && !taVi.value.trim();
+      const noDate = !dateInput.value;
+      const show = match && (!onlyBlank || blank) && (!onlyNoDate || noDate);
+      row.style.display = show ? "" : "none";
+    });
+  }
+  document.getElementById("filter").addEventListener("input", applyFilter);
+  document.getElementById("onlyBlank").addEventListener("change", applyFilter);
+  document.getElementById("onlyNoDate").addEventListener("change", applyFilter);
+
+  function collect() {
+    const out = {};
+    rows.forEach(({ taEn, taVi, dateInput, file, exifDate }) => {
+      const en = taEn.value.trim();
+      const vi = taVi.value.trim();
+      const d = dateInput.value;
+      // Only store the date if it diverges from the EXIF one —
+      // no point bloating the JSON with data that photos-dates.js
+      // already has.
+      const dateOverride = d && d !== exifDate ? d : "";
+      if (en || vi || dateOverride) {
+        out[file] = {};
+        if (dateOverride) out[file].date = dateOverride;
+        if (en) out[file].en = en;
+        if (vi) out[file].vi = vi;
+      }
+    });
+    return out;
+  }
+
+  document.getElementById("save").addEventListener("click", () => {
+    const out = collect();
+    localStorage.setItem(STORE_KEY, JSON.stringify(out));
+    alert("Draft saved (" + Object.keys(out).length + " descriptions)");
+  });
+
+  document.getElementById("clear").addEventListener("click", () => {
+    if (!confirm("Clear all draft descriptions?")) return;
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+  });
+
+  document.getElementById("export").addEventListener("click", () => {
+    const data = collect();
+    if (!Object.keys(data).length) {
+      document.getElementById("out").textContent = "(nothing yet — fill in some descriptions first)";
+      return;
+    }
+    const js =
+      "// photos-meta.js — descriptions per photo. Keys are filenames,\n" +
+      "// values are { en, vi } (either key optional). Consumed by photos.js.\n" +
+      "window.PHOTO_META = " + JSON.stringify(data, null, 2) + ";\n";
+    document.getElementById("out").textContent = js;
+    try {
+      navigator.clipboard.writeText(js);
+      alert("Copied " + Object.keys(data).length + " descriptions to clipboard");
+    } catch (e) {
+      alert("Rendered below — select + copy manually");
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -42,6 +42,9 @@ html {
 html, body {
   margin: 0;
   padding: 0;
+  /* Prevent transforms on the photos collage from growing a
+     horizontal scrollbar. */
+  overflow-x: clip;
   color: var(--ink);
   font-family: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
   font-weight: 400;
@@ -3388,355 +3391,399 @@ body.code-modal-open {
   color: var(--muted);
 }
 
-/* ---------- Photos: horizontal accordion ----------
-   A wide rack that scrolls horizontally. Each item is a vertical
-   column: compressed items are thin 44px slivers, the active item
-   expands into a tall portrait-friendly column. object-fit: contain
-   on the active image guarantees portraits AND landscapes both show
-   in full with no crop — that was the whole reason for flipping
-   from vertical accordion. The rack itself scrolls horizontally;
-   the vertical page scroll (hero → rack → footer) is unchanged. */
+/* ---------- Photos: desktop collage + theme cycle ----------
+   A multi-column masonry of every photo in the academy, sorted
+   in-place so same-theme frames cluster into visible blocks. The
+   cycle engine in photos.html picks a random theme every ~14s,
+   spotlights those frames (dims the rest), then a STAGE overlay
+   zooms into one random member from its collage position,
+   crossfades through the rest of the group, and zooms back out
+   to the last member's collage position. The collage itself
+   never scrolls horizontally — vertical page scroll is normal. */
 
-.photos-accordion {
-  --header-h: 84px;
-  /* Collapsed sliver width — JS reads this via getComputedStyle
-     to stay in sync with CSS breakpoints (36px on mobile). */
-  --item-w: 44px;
+.photos-collage {
   margin: 0;
-  padding: 0;
+  padding: clamp(16px, 2.2vw, 36px);
   max-width: none;
   width: 100%;
-  height: calc(100vh - var(--header-h));
-  overflow: hidden;
   background: #0a0a0a;
   position: relative;
 }
 
-/* Inner track — JS translates this horizontally so the active
-   item sits at the viewport center. Using transform instead of
-   scrollLeft means no boundary clamping — items at the start or
-   end of the row center the same way as items in the middle. */
 .photos-track {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: row;
-  gap: 2px;
-  height: 100%;
-  will-change: transform;
-  transition: transform 900ms cubic-bezier(.72, 0, .12, 1);
+  /* Multi-column masonry. column-count is a cheap way to get a
+     Pinterest-style packed layout without JS layout math; each
+     .pa-item uses break-inside: avoid so a photo never splits
+     across two columns. Fewer columns = bigger thumbs. */
+  column-count: 5;
+  column-gap: clamp(4px, 0.5vw, 8px);
 }
+
+@media (min-width: 1600px) { .photos-track { column-count: 6; } }
+@media (max-width: 1400px) { .photos-track { column-count: 4; } }
+@media (max-width: 1024px) { .photos-track { column-count: 3; } }
+@media (max-width: 640px)  { .photos-track { column-count: 2; } }
 
 .pa-item {
   position: relative;
-  margin: 0;
-  flex: 0 0 auto;
-  width: var(--item-w, 44px);
-  height: 100%;
-  overflow: hidden;
+  display: block;
+  break-inside: avoid;
+  margin: 0 0 clamp(4px, 0.5vw, 8px);
   background: #0a0a0a;
+  overflow: hidden;
+  opacity: 1;
   cursor: pointer;
   outline: none;
-  transition: width 900ms cubic-bezier(.72, 0, .12, 1);
-  will-change: width;
+  transition:
+    opacity 700ms cubic-bezier(.2, .7, .2, 1),
+    filter 700ms cubic-bezier(.2, .7, .2, 1);
 }
 
 .pa-item:focus-visible {
-  box-shadow: inset 0 0 0 2px #fff;
-}
-
-.pa-item.is-active {
-  /* Width follows the photo's NATIVE aspect × rack height, so the
-     expanded column is exactly the photo's own shape — no black
-     bars on the sides, no cropping. JS writes --aspect
-     (naturalWidth / naturalHeight) on image load; the fallback
-     0.67 is a portrait guess used for the split second before the
-     image arrives. Capped at 98vw so very wide panoramas still
-     fit the viewport (those accept a small top/bottom crop from
-     object-fit: cover). */
-  width: min(calc(var(--aspect, 0.67) * (100vh - var(--header-h))), 98vw);
+  outline: 2px solid #fff;
+  outline-offset: -2px;
 }
 
 .pa-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* cover everywhere — on compressed slivers it shows a center slice,
-     and on the active column the container already matches the photo's
-     aspect, so cover renders the full frame with no visible crop. */
-  object-fit: cover;
-  object-position: center;
   display: block;
-  transform-origin: 50% 50%;
-  transform: scale(1.05);
-  filter: brightness(0.45) saturate(0.8);
-  transition: transform 1600ms cubic-bezier(.72, 0, .12, 1),
-              filter 900ms cubic-bezier(.72, 0, .12, 1);
-  will-change: transform, filter;
-  backface-visibility: hidden;
-  pointer-events: none;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  filter: brightness(0.9) saturate(0.95);
+  transform: scale(1);
+  transition:
+    filter 500ms ease,
+    transform 700ms cubic-bezier(.2, .7, .2, 1);
 }
 
-.pa-item.is-active .pa-img {
-  filter: brightness(1) saturate(1);
-  animation: paZoom 9s ease-in-out 200ms infinite alternate;
+/* Subtle hover bump — signals that items are clickable without
+   shouting. Only active when the collage isn't currently being
+   spotlighted (dim / spotlight states take precedence). */
+.pa-item:hover:not(.is-dimmed):not(.is-spotlighted) .pa-img {
+  filter: brightness(1.05) saturate(1.05);
+  transform: scale(1.02);
 }
 
-/* Slow zoom on the active frame, Camille Mormal-style. */
-@keyframes paZoom {
-  0%   { transform: scale(1);    }
-  100% { transform: scale(1.05); }
-}
-
-/* Caption on the active frame: large, anchored to the bottom. */
+/* Caption overlay on each collage item — fades in on spotlight
+   only, so the default collage view stays quiet and image-first. */
 .pa-cap {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2;
-  padding: clamp(20px, 3vw, 40px) clamp(22px, 4vw, 56px);
+  padding: 16px 12px 10px;
   display: flex;
   align-items: flex-end;
-  gap: clamp(16px, 2.4vw, 32px);
+  gap: 10px;
   color: #fff;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0));
   opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 500ms ease 250ms, transform 500ms ease 250ms;
+  transform: translateY(8px);
+  transition: opacity 500ms ease, transform 500ms ease;
   pointer-events: none;
 }
 
-.pa-item.is-active .pa-cap {
+.pa-item.is-spotlighted .pa-cap {
   opacity: 1;
   transform: translateY(0);
 }
 
-.pa-num {
+.pa-num,
+.pa-year {
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  letter-spacing: 0.24em;
+  font-size: 9px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.7);
   white-space: nowrap;
-  padding-bottom: 4px;
+  padding-bottom: 1px;
 }
 
 .pa-title {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
-  flex: 1 1 auto;
-}
-
-.pa-year {
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
 }
 
 .pa-text {
   font-weight: 600;
-  font-size: clamp(16px, 2vw, 24px);
+  font-size: 12px;
   line-height: 1.25;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
   color: #fff;
 }
 
-.pa-text::first-letter {
-  text-transform: uppercase;
+.pa-text::first-letter { text-transform: uppercase; }
+
+/* Vietnamese secondary line on collage/stage captions.
+   Rendered tight against the English primary — same column,
+   zero gap — so the two read as one caption block, just two
+   languages of the same thought. */
+.pa-vi {
+  display: block;
+  margin-top: 0;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.72);
 }
 
-/* Vertical label for compressed slivers — rotated so it reads
-   bottom-to-top along the slim column, like a book spine. */
-.pa-edge {
+/* Cycle states: spotlighted items pop forward, dimmed ones fade
+   back — lets the viewer read the theme before the zoom-in. */
+.pa-item.is-dimmed {
+  opacity: 0.2;
+}
+
+.pa-item.is-dimmed .pa-img {
+  filter: brightness(0.4) saturate(0.5);
+}
+
+.pa-item.is-spotlighted .pa-img {
+  filter: brightness(1) saturate(1);
+}
+
+/* Hide the collage slot whose photo is currently flying on the
+   stage — otherwise you briefly see the same image in both places
+   during the zoom. */
+.pa-item.is-taken {
+  visibility: hidden;
+}
+
+/* ---------- Stage overlay ----------
+   Fullscreen layer that rides above the collage during a cycle.
+   The <img> inside is viewport-sized + object-fit: contain, so
+   when its transform is identity it fills the screen letterboxed.
+   JS sets the transform to match a collage item's rect, then
+   animates it back to identity (zoom in) or to another rect
+   (zoom out). */
+
+.photos-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  background: rgba(10, 10, 10, 0);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms ease, background-color 500ms ease;
+}
+
+.photos-stage.is-on {
+  opacity: 1;
+  background: rgba(10, 10, 10, 0.96);
+  pointer-events: auto;
+}
+
+/* Track: flex row of slides. Its width is set by JS
+   (groupLength × 100vw). JS applies transforms directly. */
+.ps-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+  transform-origin: 0 0;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.ps-slide {
+  flex: 0 0 100vw;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Blurred background fill — uses a pre-blurred 40px LQIP
+   thumbnail (~2KB) scaled up via background-size: cover. The
+   source is already gaussian-blurred at build time, so the
+   browser's bilinear upscale produces a smooth gradient
+   without any runtime filter computation. One GPU layer per
+   slide, near-zero cost on mobile. --bg-url is set per slide
+   in JS and points to photos-lqip/{name}.jpg. */
+.ps-slide::before {
+  content: "";
   position: absolute;
   inset: 0;
+  background-image: var(--bg-url);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #000;
+  filter: brightness(0.62) saturate(1.05);
+  transform: translateZ(0);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ps-img {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  display: block;
   z-index: 1;
+}
+
+.ps-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: clamp(22px, 3vw, 44px) clamp(26px, 4vw, 56px);
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(16px, 2.4vw, 32px);
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+
+.ps-cap .pa-num,
+.ps-cap .pa-year {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ps-cap .pa-text {
+  font-size: clamp(18px, 2vw, 26px);
+}
+
+/* Stage Vietnamese line — bigger than the collage version,
+   under the primary English text. */
+.ps-cap .pa-vi {
+  margin-top: 4px;
+  font-size: clamp(13px, 1.3vw, 16px);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Close button — fixed top-right of stage. Lets the viewer
+   abort the current theme and return to the calm collage.
+   Big tap target (52×52), subtle resting state, crisper on
+   hover. */
+.ps-exit {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.82);
-  white-space: nowrap;
-  overflow: hidden;
-  font-variant-numeric: tabular-nums;
-  text-transform: lowercase;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  padding: 16px 0;
-  transition: opacity 300ms ease;
-  pointer-events: none;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.05));
-}
-
-.pa-item.is-active .pa-edge {
+  padding: 0;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: 300 28px/1 -apple-system, "Be Vietnam Pro", sans-serif;
+  border-radius: 50%;
+  cursor: pointer;
   opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 450ms ease 350ms,
+    transform 450ms cubic-bezier(.2, .7, .2, 1) 350ms,
+    background-color 180ms ease,
+    border-color 180ms ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  -webkit-appearance: none;
 }
 
-/* Hover preview: a touch of extra width on compressed slivers so
-   the column feels responsive before clicking. */
-.pa-item:hover:not(.is-active) {
-  width: 64px;
+.photos-stage.is-on .ps-exit {
+  opacity: 1;
+  transform: scale(1);
 }
 
-.pa-item:hover:not(.is-active) .pa-img {
-  filter: brightness(0.72) saturate(0.9);
+.ps-exit:hover,
+.ps-exit:focus-visible {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.7);
+  outline: none;
+}
+
+/* Prev / next navigation buttons. Vertically centered on the
+   left + right edges of the stage. Clicking either takes the
+   viewer into manual control — auto-advance pauses for 10s
+   after each click. */
+.ps-nav {
+  position: fixed;
+  top: 50%;
+  z-index: 5;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: 300 32px/1 -apple-system, "Be Vietnam Pro", sans-serif;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%) scale(0.92);
+  transition:
+    opacity 450ms ease 450ms,
+    transform 450ms cubic-bezier(.2, .7, .2, 1) 450ms,
+    background-color 180ms ease,
+    border-color 180ms ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  -webkit-appearance: none;
+}
+
+.ps-nav.prev { left: 20px; }
+.ps-nav.next { right: 20px; }
+
+.photos-stage.is-on .ps-nav {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.ps-nav:hover,
+.ps-nav:focus-visible {
+  background: rgba(0, 0, 0, 0.62);
+  border-color: rgba(255, 255, 255, 0.72);
+  outline: none;
+}
+
+@media (max-width: 640px) {
+  .ps-nav { width: 44px; height: 44px; font-size: 26px; }
+  .ps-nav.prev { left: 10px; }
+  .ps-nav.next { right: 10px; }
+  .ps-exit { width: 44px; height: 44px; font-size: 22px; top: 12px; right: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pa-item,
   .pa-img,
-  .pa-cap {
+  .pa-cap,
+  .ps-img,
+  .photos-stage {
     transition: none;
   }
-  .pa-item.is-active .pa-img {
-    animation: none;
-  }
 }
 
-/* ---------- Photos: mobile/tablet vertical scroll ----------
-   Below 1024px the horizontal accordion is replaced by a simple
-   vertical column where each photo is one block at its NATIVE
-   aspect ratio, full viewport width. Why:
-     - touch can't do hover; horizontal swipe fights vertical
-       scroll; an absolute-positioned slideshow runs out of
-       memory and crashes mobile Safari
-     - vertical scroll is the most natural mobile photo gesture
-     - native loading="lazy" lets the browser GC off-screen
-       bitmaps automatically — no JS virtualization needed
-     - portraits AND landscapes both show in full at their own
-       aspect ratio, no letterbox, no cropping
-   Animation: each block fades up as it enters the viewport via
-   IntersectionObserver (added by JS). The currently most-visible
-   block also gets a subtle ken-burns scale while it sits in the
-   middle of the screen — same Camille-Mormal-style movement as
-   desktop, but driven by scroll position instead of a timer. */
-
-@media (max-width: 1024px) {
-  .photos-accordion {
-    height: auto !important;
-    width: 100%;
-    margin: 0;
-    padding: 0 0 40px;
-    overflow: visible;
-    background: #0a0a0a;
-    position: static;
-    cursor: default;
-  }
-
-  .photos-track {
-    position: static !important;
-    display: block !important;
-    height: auto !important;
-    width: 100%;
-    transform: none !important;
-    transition: none !important;
-    will-change: auto;
-    gap: 0;
-  }
-
-  .pa-item,
-  .pa-item.is-active,
-  .pa-item:hover:not(.is-active) {
-    position: relative;
-    display: block;
-    width: 100% !important;
-    height: auto !important;
-    margin: 0 0 36px;
-    inset: auto;
-    background: #0a0a0a;
-    overflow: hidden;
-    cursor: default;
-    pointer-events: auto;
-    opacity: 0;
-    transform: translateY(28px);
-    transition: opacity 800ms cubic-bezier(.2, .7, .2, 1),
-                transform 800ms cubic-bezier(.2, .7, .2, 1);
-    will-change: opacity, transform;
-    z-index: auto;
-  }
-
-  /* Added by IntersectionObserver when the block enters the
-     viewport — triggers the fade-up. */
-  .pa-item.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .pa-img {
-    position: relative !important;
-    inset: auto;
-    width: 100% !important;
-    height: auto !important;
-    display: block;
-    object-fit: contain;
-    background: #0a0a0a;
-    filter: none !important;
-    transform: scale(1);
-    animation: none !important;
-    transition: transform 1800ms cubic-bezier(.5, .1, .3, 1);
-    will-change: auto;
-  }
-
-  /* Subtle ken-burns only on the photo nearest viewport center. */
-  .pa-item.is-near .pa-img {
-    transform: scale(1.04);
-  }
-
-  .pa-cap {
-    position: relative;
-    inset: auto;
-    z-index: auto;
-    background: transparent;
-    color: #fff;
-    padding: 14px 18px 0;
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    opacity: 1 !important;
-    transform: none !important;
-    pointer-events: auto;
-  }
-
-  .pa-num {
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 10px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    padding-bottom: 0;
-  }
-
-  .pa-title {
-    color: #fff;
-  }
-
-  .pa-year {
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 10px;
-    letter-spacing: 0.22em;
-  }
-
-  .pa-text {
-    color: #fff;
-    font-size: 14px;
-    line-height: 1.35;
-    font-weight: 500;
-  }
-
-  /* The spine label was for skinny slivers — meaningless in a
-     vertical scroll layout. */
-  .pa-edge {
-    display: none !important;
-  }
-}
+/* ---------- Photos: small-screen tweaks ----------
+   The collage + cycle runs everywhere now — column-count drops
+   to 3 (tablet) and 2 (phone) in the main .photos-track rules
+   above, so layout scales naturally. This section only adjusts
+   the hero padding + caption sizes for small viewports. */
 
 @media (max-width: 760px) {
   .photos-hero {
@@ -3744,12 +3791,22 @@ body.code-modal-open {
     padding-bottom: 28px;
   }
 
-  .pa-item {
-    margin-bottom: 28px;
+  .photos-collage {
+    padding: 10px;
   }
 
-  .pa-cap {
-    padding: 12px 14px 0;
+  /* Collage captions already fit since they scale with viewport;
+     just tighten the stage caption for phone widths. */
+  .ps-cap {
+    padding: 18px 16px 20px;
     gap: 12px;
+  }
+
+  .ps-cap .pa-text {
+    font-size: 16px;
+  }
+
+  .ps-cap .pa-vi {
+    font-size: 12.5px;
   }
 }

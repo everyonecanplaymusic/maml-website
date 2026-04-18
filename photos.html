@@ -23,23 +23,26 @@
       </h1>
       <p class="photos-intro">
         Photos from the classroom, in the field, and on stage.
-        On wide screens, a horizontal accordion of slivers; on
-        phones and tablets, a vertical scroll where every frame
-        shows in full at its own aspect.
+        A themed collage — every ~14 seconds a group lights up,
+        zooms into one of its members, scrolls through the rest,
+        and zooms back down. Click any photo to take the wheel.
       </p>
       <p class="photos-intro-vi">
-        Hình từ lớp học, điền dã, và sân khấu. Trên màn hình
-        rộng là phong cầm các vệt; trên điện thoại và máy tính
-        bảng là cuộn dọc, mỗi khung hiện đầy đủ theo tỉ lệ gốc.
+        Hình từ lớp học, điền dã, và sân khấu. Một bộ sưu tập
+        theo chủ đề — mỗi ~14 giây một nhóm sáng lên, phóng vào
+        một tấm, lướt qua phần còn lại, rồi thu về. Bấm vào hình
+        nào là cầm lái từ đó.
       </p>
     </section>
 
-    <section class="photos-accordion" id="photosAccordion" aria-label="Photo accordion"></section>
+    <section class="photos-collage" id="photosCollage" aria-label="Photo collage"></section>
   </main>
 
   <div id="site-footer"></div>
   <script src="sitefooter.js" defer></script>
 
+  <script src="photos-dates.js"></script>
+  <script src="photos-meta.js"></script>
   <script src="photos.js"></script>
   <script>
     // On-screen error surface — remote Safari dev tools are a
@@ -86,48 +89,97 @@
       });
     })();
 
-    // Build the accordion from window.PHOTO_FILES, then run the
-    // auto-cycling expand-one-collapse-rest behavior. Active item
-    // occupies the full viewport height; inactive items are thin
-    // horizontal strips. On activation the item scrolls into view
-    // so the user never loses it when it expands off-screen.
+    // Photo collage with theme cycling. Two completely different
+    // modes, split by viewport width:
+    //
+    //   Mobile/tablet (≤1024px): vertical scroll list of photos
+    //   in theme-clustered order. IntersectionObserver fades each
+    //   block in as it enters the viewport. No zoom, no cycle —
+    //   the cycle UX fights touch.
+    //
+    //   Desktop (>1024px): multi-column masonry COLLAGE. Every
+    //   ~14s the script picks a random theme group, spotlights
+    //   its members (dimming the rest), then a STAGE overlay
+    //   zooms into one random member from its collage position,
+    //   crossfades through the rest of the group at ~3s each, and
+    //   zooms back down to the final member's collage position.
+    //   Then it pauses a couple of seconds on the collage before
+    //   picking a new group. One photo can belong to multiple
+    //   groups (classroom + columbia + conference, etc.) — groups
+    //   are inferred from the filename in photos.js.
     (function () {
-      const rack = document.getElementById("photosAccordion");
+      const rack = document.getElementById("photosCollage");
       if (!rack || !window.PHOTO_FILES) return;
+      const inferGroups = window.inferPhotoGroups || function () { return ["misc"]; };
 
-      // Detect mobile/tablet ONCE at init. Below 1024px we build a
-      // completely different DOM/behavior: vertical scroll list
-      // with native lazy loading, no virtualization, no auto-cycle,
-      // no centering, no horizontal accordion. Reload the page on
-      // breakpoint flip rather than try to morph between modes —
-      // simpler and always correct.
-      const mobileMQ = window.matchMedia("(max-width: 1024px)");
-      const isMobileInit = mobileMQ.matches;
-      const isMobile = () => mobileMQ.matches;
-
-      // Shuffle the file list so every visit starts on a random
-      // frame and cycles through a random sequence. Fisher-Yates
-      // on a local copy — we never mutate window.PHOTO_FILES so
-      // other scripts on the page see the canonical order.
+      // Build {file → groups[]} and {group → files[]} maps, plus
+      // a primary-group assignment used to cluster same-theme
+      // photos together in the collage layout.
       const files = window.PHOTO_FILES.slice();
-      for (let s = files.length - 1; s > 0; s--) {
-        const j = Math.floor(Math.random() * (s + 1));
-        const tmp = files[s];
-        files[s] = files[j];
-        files[j] = tmp;
-      }
+      const groupsOf = {};
+      const primary = {};
+      const groupBuckets = {};
+      files.forEach((f) => {
+        const gs = inferGroups(f);
+        groupsOf[f] = gs;
+        primary[f] = gs[0];
+        gs.forEach((g) => {
+          (groupBuckets[g] = groupBuckets[g] || []).push(f);
+        });
+      });
+
+      // Theme-cluster sort: same primary group adjacent, tiebreak
+      // by filename for determinism within a group. Both modes
+      // render in this order, so mobile scrolls through a coherent
+      // sequence and desktop's multi-column masonry forms visible
+      // clusters per column.
+      files.sort((a, b) => {
+        const pa = primary[a], pb = primary[b];
+        if (pa !== pb) return pa.localeCompare(pb);
+        return a.localeCompare(b);
+      });
       const total = files.length;
       const totalStr = String(total).padStart(2, "0");
 
-      // Inner flex row — we translate this, not the rack, so the
-      // active item can always sit at the viewport center without
-      // the scroll-boundary clamp that scrollIntoView runs into.
-      // (On mobile this is reduced to a static block via CSS.)
+      // Inner container — flex row on desktop (legacy class), grid
+      // column cluster on the new desktop collage. Mobile CSS
+      // flattens it to a static block.
       const track = document.createElement("div");
       track.className = "photos-track";
       rack.appendChild(track);
 
-      // --- Build DOM ---
+      // Shared caption HTML — same for collage item, mobile item,
+      // and stage overlay. Takes a 1-based index. Uses
+      // PHOTO_META[file] when present for curated EN + VI text,
+      // falls back to labelFromFilename() otherwise. EN is the
+      // primary line, VI renders as a smaller italic secondary
+      // line underneath.
+      const META = window.PHOTO_META || {};
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+      function captionHTML(file, idx) {
+        const label = window.labelFromFilename(file);
+        const meta = META[file] || {};
+        const en = meta.en || label.text;
+        const vi = meta.vi || "";
+        const num = String(idx + 1).padStart(2, "0");
+        return (
+          '<span class="pa-num">' + num + " / " + totalStr + "</span>" +
+          '<span class="pa-title">' +
+            '<span class="pa-year">' + escapeHtml(label.year) + "</span>" +
+            '<span class="pa-text">' + escapeHtml(en) + "</span>" +
+            (vi ? '<span class="pa-vi">' + escapeHtml(vi) + "</span>" : "") +
+          "</span>"
+        );
+      }
+
+      // --- Build items ---
+      const itemByFile = Object.create(null);
       const frag = document.createDocumentFragment();
       files.forEach((file, idx) => {
         const num = String(idx + 1).padStart(2, "0");
@@ -136,8 +188,8 @@
         const fig = document.createElement("figure");
         fig.className = "pa-item";
         fig.dataset.i = num;
-        fig.setAttribute("role", "button");
-        fig.setAttribute("tabindex", "0");
+        fig.dataset.file = file;
+        fig.dataset.groups = groupsOf[file].join(" ");
         fig.setAttribute("aria-label", label.text);
 
         const img = document.createElement("img");
@@ -146,287 +198,710 @@
         img.loading = "lazy";
         img.decoding = "async";
         img.draggable = false;
-        // Single source path for every device. photos/ is the
-        // 2000px downscaled copy — sharp enough for desktop's
-        // ~900px-wide active column (and still safe on mobile
-        // Safari's per-tab memory budget). The full-resolution
-        // originals live in photos-orig/ locally but are
-        // gitignored; not needed for display.
         img.src = "photos/" + file;
-        // As soon as the browser knows the natural dimensions,
-        // write the aspect ratio onto the item as a CSS variable.
-        // The active-item width rule multiplies this by the rack
-        // height, so the expanded column matches the photo's own
-        // shape — no letterbox, no crop.
-        const setAspect = () => {
-          // Skip the 1×1 placeholder load — its 1:1 ratio would
-          // clobber the aspect we actually need from the real
-          // image. Real photos are always at least a few hundred px.
-          if (img.naturalWidth > 4 && img.naturalHeight > 4) {
-            fig.style.setProperty(
-              "--aspect",
-              (img.naturalWidth / img.naturalHeight).toFixed(4)
-            );
-            // If this item is already the active one, the width
-            // just jumped from the fallback aspect to the real one
-            // — re-center the track so the photo stays middle.
-            if (fig.classList.contains("is-active")) {
-              recenterIfActive(fig);
-            }
-          }
-        };
-        // Not `{ once: true }` because virtualization swaps src
-        // between the real photo and the placeholder repeatedly;
-        // the listener filters out the placeholder loads.
-        img.addEventListener("load", setAspect);
         fig.appendChild(img);
 
         const cap = document.createElement("figcaption");
         cap.className = "pa-cap";
-        cap.innerHTML =
-          '<span class="pa-num">' + num + " / " + totalStr + "</span>" +
-          '<span class="pa-title">' +
-            '<span class="pa-year">' + label.year + "</span>" +
-            '<span class="pa-text">' + label.text + "</span>" +
-          "</span>";
+        cap.innerHTML = captionHTML(file, idx);
         fig.appendChild(cap);
 
-        // The tiny edge label on compressed strips so the viewer
-        // sees the number without needing mix-blend tricks.
-        const edge = document.createElement("span");
-        edge.className = "pa-edge";
-        edge.textContent = num + "  " + label.text;
-        fig.appendChild(edge);
-
         frag.appendChild(fig);
+        itemByFile[file] = fig;
       });
       track.appendChild(frag);
-
-      // --- Activation engine ---
       const items = Array.from(track.querySelectorAll(".pa-item"));
-      let i = 0;
-      let timer = null;
-      let paused = false;
-      let userHeld = false; // click-pin
 
-      // Called when an image loads late and the aspect changes
-      // after activation — re-centers the track with the new width.
-      function recenterIfActive(fig) {
-        const idx = items.indexOf(fig);
-        if (idx >= 0 && fig.classList.contains("is-active")) {
-          centerItem(idx, false);
-        }
-      }
+      // Collage + theme cycle runs on every viewport — tablet,
+      // phone, desktop. CSS drops column-count to 3 (tablet) or
+      // 2 (phone) so thumbs stay readable; zoom-in, horizontal
+      // scroll, zoom-out and drift work identically under touch.
+      // (The old dedicated mobile vertical-scroll path is gone.)
 
-      // Collapsed sliver width (matches CSS). Read from a CSS
-      // custom property so responsive breakpoints stay in sync.
-      function collapsedW() {
-        const raw = getComputedStyle(rack).getPropertyValue("--item-w");
-        const n = parseFloat(raw);
-        return n > 0 ? n : 44;
-      }
+      // Groups we'll cycle through. A group needs ≥2 photos to
+      // make the horizontal crossfade feel meaningful; singletons
+      // are folded back into "misc".
+      const groupNames = Object.keys(groupBuckets).filter(
+        (g) => groupBuckets[g].length >= 2
+      );
 
-      // Gap between items (matches .photos-track gap).
-      const GAP = 2;
+      // Build stage: fixed overlay containing a flex-row TRACK of
+      // N slides, one slide = 100vw × 100vh. We animate the track
+      // (not individual images) so zoom + horizontal scroll are a
+      // single composited transform — no crossfade, no src swap
+      // mid-animation, no repaint between frames.
+      const stage = document.createElement("div");
+      stage.className = "photos-stage";
+      const stageTrack = document.createElement("div");
+      stageTrack.className = "ps-track";
+      stage.appendChild(stageTrack);
 
-      // Target width of an item in the FINAL state after the class
-      // toggle — computed from CSS variables, NOT measured from the
-      // DOM. Measuring offsetWidth mid-transition returns the
-      // currently-animating value, not the target, and produces a
-      // centering offset that matches the wrong frame of the
-      // animation. This function gives the committed target.
-      function targetWidth(idx, activeIdx) {
-        if (idx !== activeIdx) return collapsedW();
-        const el = items[idx];
-        const rackH = rack.clientHeight;
-        const aspectRaw = el.style.getPropertyValue("--aspect");
-        const aspect = parseFloat(aspectRaw) || 0.67;
-        return Math.min(aspect * rackH, window.innerWidth * 0.98);
-      }
+      // Close button — lets the viewer escape a theme they don't
+      // want to sit through. Setting exitRequested aborts the
+      // cycle at the next safe checkpoint, which immediately
+      // triggers the zoom-out from wherever we are back to the
+      // collage. Pause doubles after a manual exit so the next
+      // theme doesn't barge in right away.
+      const stageExit = document.createElement("button");
+      stageExit.type = "button";
+      stageExit.className = "ps-exit";
+      stageExit.setAttribute("aria-label", "Close");
+      stageExit.innerHTML = "&times;";
+      stage.appendChild(stageExit);
 
-      // Sum of target widths for items [0..n), plus the gaps
-      // between them. Gives the final offsetLeft of item n.
-      function targetOffsetLeft(n, activeIdx) {
-        let x = 0;
-        for (let k = 0; k < n; k++) {
-          x += targetWidth(k, activeIdx) + GAP;
-        }
-        return x;
-      }
+      // Prev/next buttons — let the viewer take manual control
+      // of the group scroll. A click on either sets manualUntil
+      // 10s in the future; while that window is open the cycle
+      // loop stops auto-advancing and simply polls. After 10s
+      // of no clicks the auto-advance resumes from the viewer's
+      // current slide.
+      const stagePrev = document.createElement("button");
+      stagePrev.type = "button";
+      stagePrev.className = "ps-nav prev";
+      stagePrev.setAttribute("aria-label", "Previous");
+      stagePrev.innerHTML = "&#x2039;"; // ‹
+      stage.appendChild(stagePrev);
 
-      // Center the active item at the viewport horizontal center
-      // using the TARGET layout (post-transition state). Both the
-      // track transform and the item widths animate over the same
-      // 900ms bezier, so the motion stays in sync without needing
-      // to measure interpolated values. On mobile this is a no-op
-      // because the slideshow doesn't use a translated track.
-      function centerItem(n, instant) {
-        if (isMobile()) {
-          // Reset any leftover transform from a desktop session.
-          track.style.transform = "";
-          return;
-        }
-        const left = targetOffsetLeft(n, n);
-        const w = targetWidth(n, n);
-        const targetCenter = left + w / 2;
-        const offset = rack.clientWidth / 2 - targetCenter;
-        if (instant) {
-          track.style.transition = "none";
-          track.style.transform = "translate3d(" + offset + "px, 0, 0)";
-          void track.offsetWidth;
-          track.style.transition = "";
-        } else {
-          track.style.transform = "translate3d(" + offset + "px, 0, 0)";
-        }
-      }
+      const stageNext = document.createElement("button");
+      stageNext.type = "button";
+      stageNext.className = "ps-nav next";
+      stageNext.setAttribute("aria-label", "Next");
+      stageNext.innerHTML = "&#x203A;"; // ›
+      stage.appendChild(stageNext);
 
+      document.body.appendChild(stage);
 
-      function setActive(n, opts) {
-        const o = opts || {};
-        items.forEach((el, k) => el.classList.toggle("is-active", k === n));
-        i = n;
-        const img = items[n].querySelector(".pa-img");
-        if (img) img.loading = "eager";
-        // Centering uses target widths, not measured ones, so we
-        // can call it synchronously without waiting for reflow.
-        centerItem(n, o.instant);
-      }
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-      function tick() {
-        if (paused || userHeld) return;
-        setActive((i + 1) % total);
-      }
-
-      function start() {
-        stop();
-        // Mobile slideshow gets a slower beat — reading a caption
-        // on a phone takes longer than glancing at a desktop strip.
-        timer = setInterval(tick, isMobile() ? 5200 : 4200);
-      }
-      function stop() { if (timer) { clearInterval(timer); timer = null; } }
-
-      // Desktop-only interaction. Mobile uses scroll + observers
-      // (set up further down) and doesn't need any of this.
-      if (!isMobileInit) {
-        items.forEach((el, k) => {
-          el.addEventListener("mouseenter", () => {
-            if (userHeld) return;
-            paused = true;
-            setActive(k);
-          });
-          el.addEventListener("click", () => {
-            userHeld = true;
-            setActive(k);
-            stop();
-            setTimeout(() => { userHeld = false; paused = false; start(); }, 6000);
-          });
-          el.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              el.click();
-            }
-          });
-        });
-
-        rack.addEventListener("mouseleave", () => {
-          if (userHeld) return;
-          paused = false;
+      // Sleep that wakes up early if exitRequested flips true, so
+      // we don't burn a full dwell after the viewer has already
+      // asked to bail. Polls every 60ms — cheap.
+      let exitRequested = false;
+      function safeSleep(ms) {
+        return new Promise((res) => {
+          const start = Date.now();
+          const tick = () => {
+            if (exitRequested || Date.now() - start >= ms) return res();
+            setTimeout(tick, 60);
+          };
+          tick();
         });
       }
 
-      // Breakpoint flip (e.g. iPad rotation): mobile and desktop
-      // use completely different DOM/JS code paths, so rather
-      // than try to morph between them live, just reload the page.
-      // Simpler and always correct.
-      const onMQChange = () => {
-        if (mobileMQ.matches !== isMobileInit) location.reload();
-      };
-      if (typeof mobileMQ.addEventListener === "function") {
-        mobileMQ.addEventListener("change", onMQChange);
-      } else if (typeof mobileMQ.addListener === "function") {
-        mobileMQ.addListener(onMQChange);
-      }
-
-      // === Mobile path: vertical scroll + IntersectionObserver ===
-      // No auto-cycle, no centerItem, no virtualization. Native
-      // lazy loading handles memory; an observer adds .is-visible
-      // (fade-up) and .is-near (subtle ken-burns) as items pass
-      // through the viewport. Skip every desktop interaction.
-      if (isMobileInit) {
-        // Fade-up when the item enters the viewport — sticky:
-        // once visible, stay visible (don't fade out on scroll up).
-        const showIO = new IntersectionObserver((entries) => {
-          entries.forEach((e) => {
-            if (e.isIntersecting) {
-              e.target.classList.add("is-visible");
-              showIO.unobserve(e.target);
-            }
-          });
-        }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
-
-        // Ken-burns toggle for the photo nearest viewport center.
-        // Threshold is high so only one item at a time has it.
-        const nearIO = new IntersectionObserver((entries) => {
-          entries.forEach((e) => {
-            e.target.classList.toggle("is-near", e.isIntersecting);
-          });
-        }, { threshold: 0.6 });
-
-        items.forEach((it) => {
-          showIO.observe(it);
-          nearIO.observe(it);
-        });
-
-        // Force the first item visible immediately so it's not
-        // stuck at opacity 0 if it's already inside the viewport
-        // before the observer fires.
-        if (items[0]) items[0].classList.add("is-visible");
-
-        return; // mobile path ends here — no auto-cycle, no kickoff
-      }
-
-      // === Desktop path below ===
-
-      // Viewport resize → recenter the current active item
-      // immediately (no animation) so the layout doesn't look
-      // off-axis after a window resize or device rotation.
-      let resizeTimer = null;
-      window.addEventListener("resize", () => {
-        if (resizeTimer) clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          centerItem(i, true);
-        }, 120);
+      stageExit.addEventListener("click", (e) => {
+        e.stopPropagation();
+        exitRequested = true;
+      });
+      // Escape key as a keyboard fallback.
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && stage.classList.contains("is-on")) {
+          exitRequested = true;
+        }
       });
 
-      // Kick off: preload the first image so we can set its
-      // aspect before the initial activation — otherwise the
-      // expanded column would start at the fallback aspect and
-      // animate to the real aspect once the image arrived, which
-      // reads as a jarring width jump on first paint.
-      let kicked = false;
-      function kickoff() {
-        if (kicked) return;
-        kicked = true;
-        setActive(0, { instant: true });
-        start();
+      // Build a single .ps-slide from a filename + caption index.
+      function buildSlide(file, captionIdx) {
+        const slide = document.createElement("div");
+        slide.className = "ps-slide";
+        // Feed the blurred-background pseudo-element with the
+        // pre-generated LQIP — a 40px pre-blurred thumbnail
+        // (~2KB). The browser just upscales it to cover; no
+        // runtime filter op, so cost on mobile is negligible.
+        // LQIPs live in photos-lqip/ with the same basename as
+        // the full photo but .jpg extension regardless of the
+        // source format.
+        const lqipName = file.replace(/\.[^.]+$/, ".jpg");
+        slide.style.setProperty(
+          "--bg-url",
+          'url("photos-lqip/' + lqipName.replace(/"/g, '\\"') + '")'
+        );
+        const img = document.createElement("img");
+        img.className = "ps-img";
+        img.src = "photos/" + file;
+        img.alt = "";
+        img.decoding = "async";
+        img.draggable = false;
+        slide.appendChild(img);
+        const cap = document.createElement("figcaption");
+        cap.className = "ps-cap";
+        cap.innerHTML = captionHTML(file, captionIdx);
+        slide.appendChild(cap);
+        return slide;
       }
-      const firstImg = items[0].querySelector(".pa-img");
-      const firstReal = firstImg && firstImg.src;
-      if (firstReal) {
-        const pre = new Image();
-        pre.onload = () => {
-          items[0].style.setProperty(
-            "--aspect",
-            (pre.naturalWidth / pre.naturalHeight).toFixed(4)
-          );
-          kickoff();
+
+      // Scale + translate the whole track so slide `slideIdx`
+      // (its natural pre-transform position is [idx*sw, (idx+1)*sw])
+      // lands centered inside `rect` on the viewport, with cover
+      // scaling. Identity transform for slide k is
+      // `translateX(-k*100vw) scale(1)` — that's what the zoom-in
+      // animates TOWARD, and what the scroll-between moves AMONG.
+      function trackTransform(rect, slideIdx) {
+        const sw = window.innerWidth;
+        const sh = window.innerHeight;
+        const scale = Math.max(rect.width / sw, rect.height / sh);
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const tx = centerX - (slideIdx + 0.5) * sw * scale;
+        const ty = centerY - 0.5 * sh * scale;
+        return "translate3d(" + tx + "px, " + ty + "px, 0) scale(" + scale + ")";
+      }
+
+      // Wait until an <img> has actually decoded its bitmap — this
+      // is the single biggest contributor to smoother animation,
+      // because a transition that starts while the decoder is
+      // still working gets paused mid-frame when the bitmap
+      // finally arrives and the browser re-paints. decode()
+      // resolves after paint is ready.
+      function decoded(img) {
+        if (!img) return Promise.resolve();
+        if (typeof img.decode === "function") {
+          return img.decode().catch(() => {});
+        }
+        if (img.complete && img.naturalWidth) return Promise.resolve();
+        return new Promise((res) => {
+          img.addEventListener("load", res, { once: true });
+          img.addEventListener("error", res, { once: true });
+        });
+      }
+
+      // Curves. Ease-out quart for the zoom + scroll — starts at
+      // full speed (already moving from rest feels "snap"-y) and
+      // decelerates smoothly to a stop, giving the "ramp" feel
+      // the user asked for. Zoom-in uses a slightly punchier
+      // curve because the motion is larger.
+      const CURVE_SCROLL = "cubic-bezier(0.22, 0.8, 0.24, 1)";
+      const CURVE_ZOOM_IN = "cubic-bezier(0.16, 0.84, 0.44, 1)";
+      const CURVE_ZOOM_OUT = "cubic-bezier(0.45, 0, 0.25, 1)";
+      const DUR_ZOOM = 2000;
+      const DUR_SCROLL = 1430;
+      const DUR_DWELL = 1600;
+
+      // Manual navigation: viewer clicks prev/next during the
+      // scroll phase. navTo updates the track transform to the
+      // requested slide, bumps manualUntil 10s into the future.
+      // Auto-advance inside the cycle loop polls that deadline
+      // and holds while it's in the future. navTo does nothing
+      // during zoom-in/zoom-out (inScrollPhase guard) so the
+      // viewer can't stomp those animations mid-flight.
+      function navTo(delta) {
+        if (!inScrollPhase) return;
+        const target = cycleCurrentK + delta;
+        if (target < 0 || target >= cyclePhotos.length) return;
+        // Nudge the decoder; fire-and-forget, no await.
+        const img = cycleSlideEls[target].querySelector(".ps-img");
+        if (img && typeof img.decode === "function") img.decode().catch(() => {});
+        stageTrack.style.transition = "transform " + DUR_SCROLL + "ms " + CURVE_SCROLL;
+        stageTrack.style.transform =
+          "translate3d(-" + (target * 100) + "vw, 0, 0) scale(1)";
+        cycleCurrentK = target;
+        manualUntil = Date.now() + MANUAL_IDLE_MS;
+      }
+
+      stagePrev.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navTo(-1);
+      });
+      stageNext.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navTo(1);
+      });
+
+      // Keyboard: left/right arrows nav in the same way, Esc
+      // already triggers exit via its existing handler below.
+      document.addEventListener("keydown", (e) => {
+        if (!stage.classList.contains("is-on")) return;
+        if (e.key === "ArrowLeft") { navTo(-1); e.preventDefault(); }
+        else if (e.key === "ArrowRight") { navTo(1); e.preventDefault(); }
+      });
+
+      let lastGroup = null;
+      let cycling = false;
+      let takenItem = null;
+
+      // Manual-control state for the scroll-through-group phase.
+      // cyclePhotos + cycleSlideEls + cycleCurrentK are shared
+      // between cycle() and the prev/next button handlers so the
+      // viewer can step through slides while the cycle loop is
+      // running. manualUntil is a deadline: while Date.now() is
+      // below it, the auto-advance loop polls without advancing.
+      // Each prev/next click bumps manualUntil 10s into the future.
+      let cyclePhotos = [];
+      let cycleSlideEls = [];
+      let cycleCurrentK = 0;
+      let inScrollPhase = false;
+      let manualUntil = 0;
+      const MANUAL_IDLE_MS = 10000;
+      // Set when the viewer clicks a specific photo in the collage.
+      // The current cycle aborts, and the next cycle starts with
+      // that photo as slide 0 inside one of its groups.
+      let pendingStart = null;
+      // Pre-chosen target for the next cycle. Set during cooldown,
+      // used at cycle start to open on that exact photo + group.
+      // Paired with a gentle drift of the whole collage toward
+      // the target photo so the viewer sees where we're heading
+      // before the zoom-in fires.
+      let peekedNext = null;
+
+      function pickAutoNext() {
+        let group = lastGroup;
+        if (groupNames.length > 1) {
+          let tries = 0;
+          while (group === lastGroup && tries < 8) {
+            group = groupNames[Math.floor(Math.random() * groupNames.length)];
+            tries++;
+          }
+        } else if (groupNames.length === 1) {
+          group = groupNames[0];
+        } else {
+          return null;
+        }
+        const photos = groupBuckets[group];
+        const photo = photos[Math.floor(Math.random() * photos.length)];
+        return { startFile: photo, forceGroup: group };
+      }
+
+      // Drift = slow PAGE scroll toward the next target photo.
+      // Not a transform on the collage — an actual window scroll,
+      // so the page moves the way the viewer expects and the
+      // target photo glides into the center of the viewport.
+      // Cancels itself if the viewer manually scrolls (wheel,
+      // touch, keyboard) so we don't fight their input.
+      let driftRaf = null;
+      function cancelDrift() {
+        if (driftRaf) {
+          cancelAnimationFrame(driftRaf);
+          driftRaf = null;
+        }
+      }
+
+      function driftRackToward(file) {
+        cancelDrift();
+        const item = itemByFile[file];
+        if (!item) return;
+        const rect = item.getBoundingClientRect();
+        const startY = window.scrollY || window.pageYOffset || 0;
+        const targetY = startY + (rect.top + rect.height / 2) - window.innerHeight / 2;
+        const dy = targetY - startY;
+        if (Math.abs(dy) < 4) return;
+
+        const dur = 3800;
+        const t0 = performance.now();
+        // ease-in-out cubic: ramp up from rest, ramp down to rest.
+        // Symmetric at both ends so the collage never "jerks"
+        // into motion or stops abruptly.
+        const ease = (t) =>
+          t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        // If the viewer scrolls manually, abort — their intent wins.
+        let aborted = false;
+        const onUserScroll = (e) => {
+          // Our own programmatic scrollTo also fires the scroll
+          // event, so only abort on real input.
+          if (e && (e.isTrusted === false)) return;
         };
-        pre.onerror = kickoff;
-        pre.src = firstReal;
-        // Safety net: don't block forever if the image is slow.
-        setTimeout(kickoff, 1500);
+        const onWheel = () => { aborted = true; };
+        const onTouch = () => { aborted = true; };
+        const onKey = (e) => {
+          if (["PageUp", "PageDown", "ArrowUp", "ArrowDown", "Home", "End", " "].indexOf(e.key) >= 0) {
+            aborted = true;
+          }
+        };
+        window.addEventListener("wheel", onWheel, { passive: true, once: false });
+        window.addEventListener("touchmove", onTouch, { passive: true, once: false });
+        window.addEventListener("keydown", onKey);
+
+        function cleanup() {
+          window.removeEventListener("wheel", onWheel);
+          window.removeEventListener("touchmove", onTouch);
+          window.removeEventListener("keydown", onKey);
+        }
+
+        function frame(now) {
+          if (aborted) {
+            cleanup();
+            driftRaf = null;
+            return;
+          }
+          const t = Math.min(1, (now - t0) / dur);
+          const y = startY + dy * ease(t);
+          window.scrollTo(0, y);
+          if (t < 1) {
+            driftRaf = requestAnimationFrame(frame);
+          } else {
+            cleanup();
+            driftRaf = null;
+          }
+        }
+        driftRaf = requestAnimationFrame(frame);
+      }
+
+      // Nothing to reset now — drift is just page scroll, which
+      // the browser keeps as-is between cycles. Kept as a no-op
+      // so other code paths don't need to change.
+      function resetRackDrift() {
+        cancelDrift();
+      }
+
+      // Wire up collage clicks: clicking a photo during the calm
+      // collage moment starts a cycle with that photo as the
+      // entry point. Clicking during an active cycle aborts it
+      // and queues the clicked photo for the next iteration.
+      items.forEach((el) => {
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          pendingStart = el.dataset.file;
+          if (cycling) {
+            exitRequested = true;
+          } else {
+            // Cycle is in its post-cycle cool-down; interrupt the
+            // sleep so the new one kicks off immediately.
+            wakeCooldown();
+          }
+        });
+        el.setAttribute("role", "button");
+        el.setAttribute("tabindex", "0");
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            el.click();
+          }
+        });
+      });
+
+      // Cool-down sleeper — cycle() await's cooldownSleep() at the
+      // end of each run. wakeCooldown() flips the flag so the
+      // sleep resolves early and the next cycle starts right away
+      // (used when the user clicks a photo mid-cooldown).
+      let cooldownResolve = null;
+      function cooldownSleep(ms) {
+        return new Promise((res) => {
+          const t = setTimeout(() => {
+            cooldownResolve = null;
+            res();
+          }, ms);
+          cooldownResolve = () => {
+            clearTimeout(t);
+            cooldownResolve = null;
+            res();
+          };
+        });
+      }
+      function wakeCooldown() {
+        if (cooldownResolve) cooldownResolve();
+      }
+
+      function setTaken(item) {
+        if (takenItem === item) return;
+        if (takenItem) takenItem.classList.remove("is-taken");
+        if (item) item.classList.add("is-taken");
+        takenItem = item;
+      }
+
+      async function cycle(opts) {
+        if (cycling) return;
+        cycling = true;
+        exitRequested = false;
+        opts = opts || {};
+
+        // Pick a group + starting photo. Two entry points:
+        //   1. opts.startFile (user clicked a collage photo):
+        //      walk that photo's group list, pick a random one
+        //      (≥2 members), make that photo slide 0, shuffle the
+        //      rest around it. Same photo clicked twice in a row
+        //      can produce a different group/sequence.
+        //   2. no startFile (auto-cycle): pick a random group
+        //      different from last time, shuffle its members.
+        let group, photos;
+        if (opts.startFile && itemByFile[opts.startFile]) {
+          const sf = opts.startFile;
+          // forceGroup is used by the auto-drift path — it's
+          // already picked the group the photo belongs to, so
+          // cycle must honour that pick for consistency with the
+          // visual drift that just happened.
+          if (
+            opts.forceGroup &&
+            groupBuckets[opts.forceGroup] &&
+            groupBuckets[opts.forceGroup].indexOf(sf) >= 0
+          ) {
+            group = opts.forceGroup;
+          } else {
+            const candidateGroups = (groupsOf[sf] || []).filter(
+              (g) => (groupBuckets[g] || []).length >= 2
+            );
+            if (candidateGroups.length > 0) {
+              group = candidateGroups[Math.floor(Math.random() * candidateGroups.length)];
+            } else {
+              // Photo is a singleton theme — just show it alone.
+              group = groupsOf[sf][0];
+            }
+          }
+          photos = (groupBuckets[group] || [sf]).slice();
+          const rest = photos.filter((f) => f !== sf);
+          for (let s = rest.length - 1; s > 0; s--) {
+            const j = Math.floor(Math.random() * (s + 1));
+            const tmp = rest[s]; rest[s] = rest[j]; rest[j] = tmp;
+          }
+          photos = [sf].concat(rest);
+        } else {
+          group = lastGroup;
+          if (groupNames.length > 1) {
+            let tries = 0;
+            while (group === lastGroup && tries < 8) {
+              group = groupNames[Math.floor(Math.random() * groupNames.length)];
+              tries++;
+            }
+          } else {
+            group = groupNames[0];
+          }
+          photos = groupBuckets[group].slice();
+          for (let s = photos.length - 1; s > 0; s--) {
+            const j = Math.floor(Math.random() * (s + 1));
+            const tmp = photos[s]; photos[s] = photos[j]; photos[j] = tmp;
+          }
+        }
+
+        // Build slides into the track. Parked on outer state too
+        // so the prev/next handlers (defined outside cycle) can
+        // drive the track without touching cycle's locals.
+        stageTrack.innerHTML = "";
+        stageTrack.style.width = (photos.length * 100) + "vw";
+        const slideEls = photos.map((f) => {
+          const idx = items.indexOf(itemByFile[f]);
+          const slide = buildSlide(f, idx);
+          stageTrack.appendChild(slide);
+          return slide;
+        });
+        cyclePhotos = photos;
+        cycleSlideEls = slideEls;
+        cycleCurrentK = 0;
+        manualUntil = 0;
+        inScrollPhase = false;
+
+        // Spotlight group members. Dim everything else.
+        items.forEach((el) => {
+          const f = el.dataset.file;
+          const inGroup = photos.indexOf(f) >= 0;
+          el.classList.toggle("is-spotlighted", inGroup);
+          el.classList.toggle("is-dimmed", !inGroup);
+        });
+        // Release any drift the cooldown applied — ease back to
+        // identity in parallel with the spotlight pause, so rects
+        // are accurate by the time we read them for the zoom-in.
+        resetRackDrift();
+        await safeSleep(800);
+
+        // cycleCurrentK is the shared slide pointer — tracks the
+        // currently visible slide so the zoom-out target is always
+        // whatever photo is on screen when the cycle ends (user
+        // exit, manual-idle, or natural end).
+
+        // --- Zoom-in ---
+        const firstFile = photos[0];
+        const firstItem = itemByFile[firstFile];
+
+        // If the first item is off-screen (first load, or a
+        // long-dormant tab), scroll it into view FIRST so the
+        // zoom-in animates from its real collage rect instead
+        // of from some off-screen edge — that's the "dropping
+        // from somewhere" bug. Wait for the scroll to complete
+        // before reading the rect.
+        {
+          const r = firstItem.getBoundingClientRect();
+          const margin = 40;
+          const needsScroll =
+            r.top < margin ||
+            r.bottom > window.innerHeight - margin;
+          if (needsScroll) {
+            const startY = window.scrollY || window.pageYOffset || 0;
+            const targetY =
+              startY + (r.top + r.height / 2) - window.innerHeight / 2;
+            await new Promise((res) => {
+              cancelDrift();
+              const dur = 1000;
+              const t0 = performance.now();
+              const dy = targetY - startY;
+              const ease = (t) =>
+                t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+              (function step(now) {
+                const t = Math.min(1, (now - t0) / dur);
+                window.scrollTo(0, startY + dy * ease(t));
+                if (t < 1) requestAnimationFrame(step);
+                else res();
+              })(performance.now());
+            });
+          }
+        }
+
+        const fromRect = firstItem.getBoundingClientRect();
+        setTaken(firstItem);
+
+        // Position the track so slide[0] sits inside fromRect.
+        stageTrack.style.transition = "none";
+        stageTrack.style.transform = trackTransform(fromRect, 0);
+        stage.classList.add("is-on");
+
+        // Wait for the first image to be decoded BEFORE starting
+        // the zoom animation. Starting mid-decode is the main
+        // source of the jank the viewer was seeing.
+        await decoded(slideEls[0].querySelector(".ps-img"));
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        void stageTrack.offsetWidth;
+
+        // Animate to identity at slide 0.
+        stageTrack.style.transition = "transform " + DUR_ZOOM + "ms " + CURVE_ZOOM_IN;
+        stageTrack.style.transform = "translate3d(0, 0, 0) scale(1)";
+        await safeSleep(DUR_ZOOM);
+        if (!exitRequested) await safeSleep(DUR_DWELL);
+
+        // --- Horizontal scroll through remaining slides ---
+        // Auto-advance unless the viewer is in manual mode (set
+        // by prev/next clicks — navTo bumps manualUntil 10s out
+        // each time). In manual mode we just poll; auto resumes
+        // as soon as the idle window elapses.
+        inScrollPhase = true;
+        while (!exitRequested) {
+          // Manual hold — user navigated, we wait out their 10s
+          // idle window before auto-advancing again.
+          if (manualUntil > Date.now()) {
+            await safeSleep(Math.min(manualUntil - Date.now(), 400));
+            continue;
+          }
+          // Auto-advance one slide.
+          if (cycleCurrentK >= photos.length - 1) break;
+          const next = cycleCurrentK + 1;
+          await decoded(slideEls[next].querySelector(".ps-img"));
+          if (exitRequested) break;
+          if (manualUntil > Date.now()) continue; // user clicked during decode
+          stageTrack.style.transition = "transform " + DUR_SCROLL + "ms " + CURVE_SCROLL;
+          stageTrack.style.transform = "translate3d(-" + (next * 100) + "vw, 0, 0) scale(1)";
+          cycleCurrentK = next;
+          await safeSleep(DUR_SCROLL);
+          if (exitRequested) break;
+          await safeSleep(DUR_DWELL);
+        }
+        inScrollPhase = false;
+
+        // --- Zoom-out from current slide to its collage rect ---
+        const currFile = photos[cycleCurrentK];
+        const currItem = itemByFile[currFile];
+        setTaken(currItem);
+
+        // Same as zoom-in: if the target collage item is
+        // off-screen, scroll it into view BEHIND the stage so
+        // the zoom-out has a real rect to land on. Stage covers
+        // everything so the scroll is invisible.
+        {
+          const r = currItem.getBoundingClientRect();
+          const margin = 40;
+          const needsScroll =
+            r.top < margin ||
+            r.bottom > window.innerHeight - margin;
+          if (needsScroll) {
+            const startY = window.scrollY || window.pageYOffset || 0;
+            const targetY =
+              startY + (r.top + r.height / 2) - window.innerHeight / 2;
+            window.scrollTo(0, targetY);
+          }
+        }
+
+        const toRect = currItem.getBoundingClientRect();
+
+        stageTrack.style.transition = "transform " + DUR_ZOOM + "ms " + CURVE_ZOOM_OUT;
+        stageTrack.style.transform = trackTransform(toRect, cycleCurrentK);
+        stage.classList.remove("is-on");
+        await sleep(DUR_ZOOM);
+
+        // Cleanup.
+        setTaken(null);
+        items.forEach((el) => el.classList.remove("is-spotlighted", "is-dimmed"));
+        stageTrack.style.transition = "none";
+        stageTrack.style.transform = "";
+        stageTrack.innerHTML = "";
+
+        cycling = false;
+        // Cool-down before the next cycle:
+        //   - pending click → short pause, then start user's pick
+        //   - plain exit (no click) → longer pause so the viewer
+        //     can look around the collage
+        //   - natural end → moderate pause, with a subtle drift
+        //     toward the pre-picked next target so the viewer
+        //     can sense where we're heading before zoom-in.
+        let pauseMs;
+        if (pendingStart) {
+          pauseMs = 900;
+        } else if (exitRequested) {
+          pauseMs = 6000;
+        } else {
+          pauseMs = 2400;
+          // Pre-pick next group + photo, drift toward it.
+          peekedNext = pickAutoNext();
+          if (peekedNext) driftRackToward(peekedNext.startFile);
+        }
+        exitRequested = false;
+        await cooldownSleep(pauseMs);
+
+        let nextOpts;
+        if (pendingStart) {
+          nextOpts = { startFile: pendingStart };
+        } else if (peekedNext) {
+          nextOpts = { startFile: peekedNext.startFile, forceGroup: peekedNext.forceGroup };
+        } else {
+          nextOpts = undefined;
+        }
+        pendingStart = null;
+        peekedNext = null;
+        cycle(nextOpts);
+      }
+
+      // Initial reveal scroll: when the viewer lands on the page
+      // (via the Photos tab in the nav), sit on the hero for a
+      // moment, then gently ease the window down toward the top
+      // of the collage so they see there's more below. Same
+      // ease-in-out cubic as the drift — symmetric ramp at both
+      // ends, no jerk at start or stop. Cancels on any user
+      // input so we don't fight intent.
+      function initialReveal() {
+        const startY = window.scrollY || 0;
+        const rackRect = rack.getBoundingClientRect();
+        const targetY = startY + rackRect.top - 24;
+        const dy = targetY - startY;
+        if (dy < 40) return; // already in view, nothing to do
+        const dur = 2400;
+        const t0 = performance.now();
+        const ease = (t) =>
+          t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        let aborted = false;
+        const abort = () => { aborted = true; };
+        window.addEventListener("wheel", abort, { passive: true, once: true });
+        window.addEventListener("touchmove", abort, { passive: true, once: true });
+        window.addEventListener("keydown", abort, { once: true });
+        (function step(now) {
+          if (aborted) return;
+          const t = Math.min(1, (now - t0) / dur);
+          window.scrollTo(0, startY + dy * ease(t));
+          if (t < 1) requestAnimationFrame(step);
+        })(performance.now());
+      }
+
+      // Kickoff: wait for the page's initial load so the collage
+      // has stable layout rects before the first cycle reads them.
+      let started = false;
+      function startCycle() {
+        if (started) return;
+        started = true;
+        // Reveal scroll first, then let the cycle auto-start so
+        // the zoom-in lands on a photo already in view.
+        setTimeout(initialReveal, 600);
+        setTimeout(cycle, 3400);
+      }
+      if (document.readyState === "complete") {
+        startCycle();
       } else {
-        kickoff();
+        window.addEventListener("load", startCycle);
+        // Safety: if enough images load we can start even before
+        // all assets finish — avoids a multi-second wait on
+        // cold cache.
+        setTimeout(startCycle, 4000);
       }
     })();
   </script>

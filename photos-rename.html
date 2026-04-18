@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rename Photos — MAML admin tool</title>
+<link rel="icon" type="image/png" href="maml-logo.png">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font: 14px/1.5 -apple-system, "Be Vietnam Pro", sans-serif;
+    background: #0a0a0a;
+    color: #eee;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  .intro {
+    color: #aaa;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    padding: 14px 0;
+    background: linear-gradient(to bottom, #0a0a0a 70%, rgba(10,10,10,0));
+    z-index: 10;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="text"] {
+    flex: 1 1 auto;
+    min-width: 160px;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1px solid #333;
+    background: #111;
+    color: #eee;
+    border-radius: 2px;
+    font-family: inherit;
+  }
+  button {
+    padding: 8px 14px;
+    font: 13px/1.2 inherit;
+    background: #fff;
+    color: #0a0a0a;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.secondary {
+    background: transparent;
+    color: #eee;
+    border-color: #333;
+  }
+  button:hover { filter: brightness(0.93); }
+  .count {
+    color: #777;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid #1a1a1a;
+    align-items: center;
+  }
+  .row img {
+    width: 180px;
+    height: 120px;
+    object-fit: cover;
+    background: #111;
+    display: block;
+    border-radius: 2px;
+  }
+  .row.done img { outline: 2px solid #7cff8e; outline-offset: -2px; }
+  .row .old {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+  .row .meta {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 6px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .row .name-input {
+    width: 100%;
+    padding: 10px 12px;
+    font: 14px/1.3 inherit;
+    background: #0f0f0f;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+  }
+  .row .name-input:focus { border-color: #888; outline: none; }
+  .row .slug {
+    margin-top: 4px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    color: #5a8;
+    min-height: 14px;
+  }
+  .out-wrap {
+    margin-top: 32px;
+    padding: 16px;
+    background: #0f0f0f;
+    border: 1px solid #222;
+    border-radius: 2px;
+  }
+  .out-wrap h2 {
+    font-size: 14px;
+    margin: 0 0 10px;
+    color: #aaa;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font: 12px/1.5 ui-monospace, Menlo, monospace;
+    color: #cde;
+    max-height: 320px;
+    overflow: auto;
+  }
+</style>
+</head>
+<body>
+
+<h1>Rename photos</h1>
+<p class="intro">
+  Local-only tool — not deployed. Type a short descriptive name
+  for each photo that has a generic camera-style filename; leave
+  the rest blank. Names auto-slugify (lowercased, hyphen-separated).
+  When you're done, click <strong>Copy rename plan</strong> and
+  paste it back to me — I'll apply the <code>mv</code>s and update
+  <code>photos.js</code>.
+</p>
+
+<div class="toolbar">
+  <span class="count" id="count"></span>
+  <input type="text" id="filter" placeholder="filter: type to narrow the list (e.g. img_16, pxl, dsc)" />
+  <button id="save">Save draft (localStorage)</button>
+  <button id="export">Copy rename plan</button>
+  <button class="secondary" id="clear">Clear draft</button>
+</div>
+
+<div id="list"></div>
+
+<div class="out-wrap">
+  <h2>Rename plan (shell + json)</h2>
+  <pre id="out">(click “Copy rename plan” to generate)</pre>
+</div>
+
+<script src="photos.js"></script>
+<script>
+(function () {
+  const STORE_KEY = "photos-rename-draft-v1";
+
+  // A filename is "generic" if it matches any of these patterns —
+  // camera default names, timestamps, Messenger-received blobs,
+  // scanner outputs. Anything with a descriptive kebab-case slug
+  // (e.g. 2019-dan-tranh-performance-...) gets skipped.
+  const GENERIC_RE = new RegExp([
+    "^img_\\d+",
+    "^dsc\\d+", "^dsc_\\d+", "^dscn\\d+",
+    "^pxl_\\d+",
+    "^0\\d{9}",              // 0227161310
+    "^20\\d{6}_\\d+",        // 20180517_164539_d800
+    "^att\\.",
+    "^received_\\d+",
+    "^research_",
+    "^image\\d+\\.",
+    "^11\\.24_",             // 11.24_features_vietnamprof
+    "^panal-poe-park",
+    "^dan-tranh-hands",
+    "^dan-tranh-line-up",
+    "^team-"
+  ].join("|"), "i");
+
+  function slugify(s) {
+    return s.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80);
+  }
+
+  function ext(fname) {
+    const m = fname.match(/\.([a-z0-9]+)$/i);
+    return m ? m[1].toLowerCase() : "jpg";
+  }
+
+  const files = (window.PHOTO_FILES || []).filter((f) => GENERIC_RE.test(f));
+  const list = document.getElementById("list");
+  const countEl = document.getElementById("count");
+  countEl.textContent = files.length + " photos need names";
+
+  // Restore draft from localStorage.
+  let draft = {};
+  try { draft = JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch (e) {}
+
+  files.forEach((file) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.dataset.file = file;
+
+    const img = document.createElement("img");
+    img.src = "photos/" + file;
+    img.alt = "";
+    img.loading = "lazy";
+    row.appendChild(img);
+
+    const right = document.createElement("div");
+    const old = document.createElement("div");
+    old.className = "old";
+    old.textContent = file;
+    right.appendChild(old);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    if (window.labelFromFilename) {
+      const lbl = window.labelFromFilename(file);
+      meta.textContent = lbl.year + " · " + lbl.text;
+    }
+    right.appendChild(meta);
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "name-input";
+    input.placeholder = "e.g. 2019-anh-thu-piano-studio (plain text is fine — will be slugified)";
+    input.value = draft[file] || "";
+    right.appendChild(input);
+
+    const slug = document.createElement("div");
+    slug.className = "slug";
+    right.appendChild(slug);
+
+    function update() {
+      const v = input.value.trim();
+      if (v) {
+        const s = slugify(v);
+        slug.textContent = "→ " + s + "." + ext(file);
+        row.classList.add("done");
+      } else {
+        slug.textContent = "";
+        row.classList.remove("done");
+      }
+    }
+    input.addEventListener("input", update);
+    update();
+
+    row.appendChild(right);
+    list.appendChild(row);
+  });
+
+  // Filter
+  document.getElementById("filter").addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll(".row").forEach((r) => {
+      const f = r.dataset.file.toLowerCase();
+      r.style.display = (!q || f.includes(q)) ? "" : "none";
+    });
+  });
+
+  function collect() {
+    const plan = [];
+    document.querySelectorAll(".row").forEach((r) => {
+      const inp = r.querySelector(".name-input");
+      const v = inp.value.trim();
+      if (!v) return;
+      const s = slugify(v);
+      if (!s) return;
+      plan.push({ from: r.dataset.file, to: s + "." + ext(r.dataset.file) });
+    });
+    return plan;
+  }
+
+  document.getElementById("save").addEventListener("click", () => {
+    const d = {};
+    document.querySelectorAll(".row").forEach((r) => {
+      const inp = r.querySelector(".name-input");
+      if (inp.value.trim()) d[r.dataset.file] = inp.value.trim();
+    });
+    localStorage.setItem(STORE_KEY, JSON.stringify(d));
+    alert("Draft saved locally (" + Object.keys(d).length + " names)");
+  });
+
+  document.getElementById("clear").addEventListener("click", () => {
+    if (!confirm("Clear all draft names?")) return;
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+  });
+
+  document.getElementById("export").addEventListener("click", () => {
+    const plan = collect();
+    if (!plan.length) {
+      document.getElementById("out").textContent = "(nothing to rename — type names first)";
+      return;
+    }
+    const shell = plan.map((p) =>
+      'mv "photos/' + p.from + '" "photos/' + p.to + '" && ' +
+      'mv "photos-orig/' + p.from + '" "photos-orig/' + p.to + '"'
+    ).join("\n");
+    const js = "const RENAMES = " + JSON.stringify(plan, null, 2) + ";";
+    const text = "# shell\n" + shell + "\n\n# json for photos.js update\n" + js;
+    const out = document.getElementById("out");
+    out.textContent = text;
+    // Copy to clipboard too
+    try {
+      navigator.clipboard.writeText(text);
+      alert("Copied " + plan.length + " renames to clipboard — paste back to me");
+    } catch (e) {
+      alert("Rendered below — select + copy manually");
+    }
+  });
+})();
+</script>
+</body>
+</html>
