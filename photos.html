@@ -198,7 +198,10 @@
         img.loading = "lazy";
         img.decoding = "async";
         img.draggable = false;
-        img.src = "photos/" + file;
+        // Collage uses 600px thumbnails (~50KB each, 4.3MB total
+        // for 91 photos) — manageable on mobile. Stage still
+        // loads the full 2000px photos from /photos/ for zoom.
+        img.src = "photos-thumb/" + file.replace(/\.[^.]+$/, ".jpg");
         fig.appendChild(img);
 
         const cap = document.createElement("figcaption");
