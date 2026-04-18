@@ -86,13 +86,6 @@
       });
     })();
 
-    // 1×1 transparent GIF — used as the placeholder src for every
-    // item that's outside the load window. Decoded cost is
-    // negligible, and the browser releases the previous (full-res)
-    // bitmap as soon as the src changes.
-    const PLACEHOLDER_SRC =
-      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
     // Build the accordion from window.PHOTO_FILES, then run the
     // auto-cycling expand-one-collapse-rest behavior. Active item
     // occupies the full viewport height; inactive items are thin
@@ -153,21 +146,13 @@
         img.loading = "lazy";
         img.decoding = "async";
         img.draggable = false;
-        if (isMobileInit) {
-          // Mobile: simple vertical scroll, native lazy load
-          // handles memory. Use the downscaled 2000px copies so
-          // each frame stays around 16MB decoded — three or four
-          // visible at a time fits well under the iOS Safari
-          // per-tab budget.
-          img.src = "photos/" + file;
-        } else {
-          // Desktop: virtualized slot — start blank, the real src
-          // (full-resolution original) is set by updateLoadWindow
-          // only when this item enters the active window.
-          img.src = PLACEHOLDER_SRC;
-          img.dataset.srcDesktop = "photos-orig/" + file;
-          img.dataset.srcMobile = "photos/" + file;
-        }
+        // Single source path for every device. photos/ is the
+        // 2000px downscaled copy — sharp enough for desktop's
+        // ~900px-wide active column (and still safe on mobile
+        // Safari's per-tab memory budget). The full-resolution
+        // originals live in photos-orig/ locally but are
+        // gitignored; not needed for display.
+        img.src = "photos/" + file;
         // As soon as the browser knows the natural dimensions,
         // write the aspect ratio onto the item as a CSS variable.
         // The active-item width rule multiplies this by the rack
@@ -295,59 +280,13 @@
         }
       }
 
-      // Window size — how many items on each side of the active
-      // index get a real image src. Mobile is tight on memory so
-      // ±1 (3 frames total: prev/active/next) is the safe ceiling.
-      // Desktop has more headroom, ±5 covers the slivers a viewer
-      // can actually see flanking the active column.
-      function loadWindow() {
-        return isMobile() ? 1 : 5;
-      }
-
-      // Pick which src path to use for an item right now. Reads
-      // isMobile() live so a viewport flip swaps every loaded
-      // image to the appropriate resolution on the next call.
-      function pickSrc(img) {
-        return isMobile() ? img.dataset.srcMobile : img.dataset.srcDesktop;
-      }
-
-      // Set the real src for items within ±W of the active index
-      // (with cycle wrap so the seam between last and first stays
-      // smooth) and revert everything else to the 1×1 placeholder
-      // so the browser frees the decoded bitmap.
-      function updateLoadWindow(activeIdx) {
-        const w = loadWindow();
-        for (let k = 0; k < total; k++) {
-          const img = items[k].querySelector(".pa-img");
-          if (!img) continue;
-          const real = pickSrc(img);
-          if (!real) continue;
-          const direct = Math.abs(k - activeIdx);
-          const wrapped = total - direct;
-          const dist = Math.min(direct, wrapped);
-          const inside = dist <= w;
-          if (inside) {
-            // Use endsWith because the absolute URL the browser
-            // exposes via .src may differ from the relative path
-            // we stored in the dataset.
-            if (!img.src.endsWith(real)) img.src = real;
-          } else if (img.src !== PLACEHOLDER_SRC) {
-            img.src = PLACEHOLDER_SRC;
-          }
-        }
-      }
 
       function setActive(n, opts) {
         const o = opts || {};
         items.forEach((el, k) => el.classList.toggle("is-active", k === n));
         i = n;
-        // Eagerly upgrade the active image so the expanded column
-        // isn't stuck on the lazy placeholder.
         const img = items[n].querySelector(".pa-img");
         if (img) img.loading = "eager";
-        // Memory virtualization — without this, mobile Safari
-        // decodes all 91 frames at once and the tab crashes.
-        updateLoadWindow(n);
         // Centering uses target widths, not measured ones, so we
         // can call it synchronously without waiting for reflow.
         centerItem(n, o.instant);
@@ -472,7 +411,7 @@
         start();
       }
       const firstImg = items[0].querySelector(".pa-img");
-      const firstReal = firstImg && pickSrc(firstImg);
+      const firstReal = firstImg && firstImg.src;
       if (firstReal) {
         const pre = new Image();
         pre.onload = () => {
