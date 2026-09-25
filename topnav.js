@@ -10,6 +10,9 @@
 // data-active (optional) overrides auto-detection of the current
 // nav item — pass the SSOT href, e.g. data-active="repertoire.html".
 //
+// data-partner (optional) co-brands the header with a partner school's
+// logo next to MAML's — key into PARTNERS below, e.g. data-partner="facts".
+//
 // To add a nav item, append to NAV_ITEMS below. That is the only
 // place to edit; all 23 pages pick it up automatically.
 
@@ -27,6 +30,16 @@
     { href: "team.html",               label: "Team"        },
     { href: "index.html#contact",      label: "Contact"     },
   ];
+
+  // Partner schools whose logo sits beside MAML's on their own pages.
+  // logo is relative to the site root.
+  const PARTNERS = {
+    facts: {
+      name: "FACTS — Folk Arts-Cultural Treasures Charter School",
+      logo: "facts/facts-logo.png",
+      href: "https://factschool.org/",
+    },
+  };
 
   function autoActive() {
     const path = location.pathname;
@@ -75,6 +88,24 @@
         '<span class="brand-vi">Học Viện Âm Nhạc &amp; Ngôn Ngữ Manhattan</span>' +
       '</span>';
 
+    const partner = PARTNERS[mount.dataset.partner];
+    let brandGroup = brand;
+    if (partner) {
+      brandGroup = document.createElement("div");
+      brandGroup.className = "brand-group";
+      const plus = document.createElement("span");
+      plus.className = "brand-x";
+      plus.setAttribute("aria-hidden", "true");
+      plus.textContent = "×";
+      const p = document.createElement("a");
+      p.className = "brand-partner";
+      p.href = partner.href;
+      p.target = "_blank";
+      p.rel = "noopener";
+      p.innerHTML = '<img src="' + base + partner.logo + '" alt="' + partner.name + '" class="brand-partner-logo" />';
+      brandGroup.append(brand, plus, p);
+    }
+
     const nav = document.createElement("nav");
     nav.className = "topnav";
     for (const item of NAV_ITEMS) {
@@ -89,7 +120,7 @@
       nav.appendChild(a);
     }
 
-    header.appendChild(brand);
+    header.appendChild(brandGroup);
     header.appendChild(nav);
     mount.replaceWith(header);
 

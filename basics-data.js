@@ -52,12 +52,13 @@ window.BASICS = [
     region: { en: "Getting started", vi: "Bắt đầu" },
     thumbnail: "hero.png",
     blurb: {
-      en: "The đàn tranh is tuned pentatonically across seventeen strings. This page walks through the standard C-pentatonic tuning (E3 up to A6), how the bridges slide to find pitch, and how to check each string against a reference.",
-      vi: "Đàn tranh lên dây ngũ cung trên mười bảy dây. Trang này đi từng dây theo lối lên ngũ cung Đô (E3 đến A6), cách trượt nhạn tìm cao độ, cách so mỗi dây với một âm mẫu.",
+      en: "The đàn tranh is tuned pentatonically across seventeen strings. This page walks through the standard C-pentatonic tuning (E3 up to G6), how the bridges slide to find pitch, and how to check each string against a reference.",
+      vi: "Đàn tranh lên dây ngũ cung trên mười bảy dây. Trang này đi từng dây theo lối lên ngũ cung Đô (E3 đến G6), cách trượt nhạn tìm cao độ, cách so mỗi dây với một âm mẫu.",
     },
     blocks: [
       { type: "h2", text: "Standard tuning" },
-      { type: "p", text: "Strings 1–17, from lowest to highest: E3, G3, A3, C4, D4, E4, G4, A4, C5, D5, E5, G5, A5, C6, D6, E6, G7. That is a pure C-pentatonic ladder spanning three octaves and change." },
+      { type: "p", text: "Strings 1–17, from lowest to highest: E3, G3, A3, C4, D4, E4, G4, A4, C5, D5, E5, G5, A5, C6, D6, E6, G6. That is a pure C-pentatonic ladder spanning three octaves and change." },
+      { type: "p", text: "✎ Corrected — this page earlier listed string 17 as G7 and the range as E3–A6. Source for G6: the FACTS 2026–27 Introduction booklet by Teacher Ngô Thanh Nhàn (string/pitch table); G6 is also the next note of the C-pentatonic ladder after E6." },
       { type: "image", file: "hero.png" },
       { type: "h3", text: "Using your phone with the Ninja Tuner browser app (free)" },
       { type: "p", text: "Works well when you have one instrument to tune and a quiet space. Load the app in your phone browser, play a string, read the pitch." },

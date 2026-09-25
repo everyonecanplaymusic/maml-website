@@ -375,6 +375,49 @@ stuttered every time `.has-active` toggled. Don't undo any of this.
   a cost and most things trigger layout. If in doubt, don't
   transition it.
 
+## FACTS partner page (`facts/`)
+
+Curriculum page for the Friday Đàn Tranh Ensemble at FACTS
+(Folk Arts-Cultural Treasures Charter School, Philadelphia),
+Teacher Ngô Thanh Nhàn, grades 5–6 and 7–8. URL: `/facts/`.
+Header is co-branded via `data-partner="facts"` → `PARTNERS`
+registry in `topnav.js`.
+
+- **One class only.** The contract email also lists the Friday
+  Folk Arts Class (T. Senfu · T. John) and Black Heritage Day —
+  other teachers' classes; keep them OFF this page.
+- **Never split by grade.** Both grade bands share one program.
+  Each song has several levels; any student picks any level
+  (a young student may play a hard version). Record levels per
+  song, never map level ↔ grade.
+- `facts/facts-data.js` — SSOT: calendar (verbatim from the
+  2026-27 contract email), events, materials registry, plan
+  (session n → material ids), songs, long-form `sections`
+  (booklet text, story), photos (captions come from
+  `photos-meta.js`), glossary. Edit only this.
+- `facts/facts.js` — renderer with two registries:
+  `MATERIAL_KINDS` (video / app / page) and `BLOCK_KINDS`
+  (h3, p, list, steps, checklist, image, images, strings,
+  table). Validates 30 Fridays + every referenced material id.
+  The year strip draws bridges and dates in the SAME column so
+  they share one x-axis.
+- `facts/build-videos.sh` — rebuilds `facts/videos/*.mp4|jpg`
+  and the AUTO-GENERATED `videos/videos.js` (durations) from
+  `archive/facts-originals/` (gitignored, ~2.6 GB: every FACTS
+  teacher file 2020–2027 lives there, incl. the 2026-27 intro
+  booklets and the Showcase 2026 script). Web copies: 720p
+  ~1 Mbps. Never commit originals.
+- **Never publish student videos, names or faces of minors**
+  (the 2020–21 group compositions / story recordings in the
+  archive). Teacher-made clips only.
+- **Audience is English-speaking students.** English only;
+  Vietnamese appears only as real names and each such word must
+  be in `glossary`. This page is the exception to the site's
+  EN/VI-pair rule.
+- `facts/img/qr-maml-us-facts.png|svg` — QR for the printed
+  booklet. The booklet's old QR (qr.mobi) is disabled and its
+  URL yeswecanmusic.us/folk.arts/facts is dead.
+
 ## Local preview
 
 ```

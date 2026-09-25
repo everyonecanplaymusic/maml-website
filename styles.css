@@ -126,6 +126,30 @@ a {
   min-height: 44px;
 }
 
+/* Co-branded header (topnav.js PARTNERS, data-partner="…"):
+   MAML brand · × · partner logo, on one line. */
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.brand-x {
+  font-weight: 300;
+  font-size: 20px;
+  color: var(--muted-2);
+}
+.brand-partner { display: block; flex-shrink: 0; }
+.brand-partner-logo {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+@media (max-width: 720px) {
+  .brand-group .brand-name { display: none; }
+  .brand-partner-logo { height: 36px; }
+}
+
 .brand-logo {
   align-self: stretch;
   height: auto;
