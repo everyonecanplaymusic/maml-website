@@ -400,7 +400,12 @@ registry in `topnav.js`.
   (h3, p, list, steps, checklist, image, images, strings,
   table). Validates 30 Fridays + every referenced material id.
   The year strip draws bridges and dates in the SAME column so
-  they share one x-axis.
+  they share one x-axis. Clicking a column (or a date in the
+  session list) selects that day: one state `selected`, one
+  writer `select()`, which repaints the day card right under
+  the strip and sets `#day-YYYY-MM-DD` (shareable). Never make
+  a column jump the page to a far-away anchor — that read as
+  "clicking does nothing".
 - `facts/build-videos.sh` — rebuilds `facts/videos/*.mp4|jpg`
   and the AUTO-GENERATED `videos/videos.js` (durations) from
   `archive/facts-originals/` (gitignored, ~2.6 GB: every FACTS

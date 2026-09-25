@@ -15,7 +15,7 @@
 // To support something new, add a registry entry first, then use it in
 // facts-data.js.
 //
-// Derived, never stored: session numbers, the next class, the showcase
+// Derived, never stored: session numbers, the next class, the selected day, the showcase
 // countdown, the year strip, video durations, which sessions use a video.
 
 (function () {
@@ -194,9 +194,10 @@
       const mark = evs.some((e) => e.kind === "showcase") ? "★" : evs.some((e) => e.kind === "finale") ? "♪" : null;
       const state = !s ? "off" : next && s.n === next.n ? "next" : date < TODAY ? "past" : "future";
       const scale = state === "next" ? 1.5 : 1;
-      root.appendChild(h(s ? "a" : "div", {
+      const col = h("a", {
         class: `facts-year-col is-${state} ${month !== lastMonth ? "is-month-start" : ""}`,
-        href: s ? `#s-${s.n}` : null,
+        href: `#day-${date}`,
+        "data-date": date,
         title: s ? `Session ${s.n} · ${dateLong(date)}` : `${dateLong(date)}${C.closures.includes(date) ? " · no class" : ""}`,
       },
         band(s ? [
@@ -209,39 +210,87 @@
           h("span", { class: "facts-year-date", text: String(d.getDate()) })),
         h("div", { class: "facts-year-lane facts-year-n", text: s ? String(s.n) : C.closures.includes(date) ? "off" : "" }),
         h("div", { class: "facts-year-lane facts-year-events" },
-          evs.map((e) => h("span", { class: "facts-year-event", title: e.who || null, text: e.title })))));
+          evs.map((e) => h("span", { class: "facts-year-event", title: e.who || null, text: e.title }))));
+      col.addEventListener("click", (ev) => { ev.preventDefault(); select(date, true); });
+      root.appendChild(col);
       lastMonth = month;
     }
 
-    // Bring the next class into view, just right of the sticky labels.
-    const scroller = root.parentElement;
-    const target = root.querySelector(".is-next");
-    const head = root.querySelector(".facts-year-head");
-    if (target) scroller.scrollLeft = Math.max(0, target.offsetLeft - head.offsetWidth - 2 * COL);
   }
 
-  function renderNext() {
+  // Bring the selected day into view, just right of the sticky labels.
+  function scrollYearTo(date) {
+    const root = document.getElementById("year");
+    const target = root.querySelector(`[data-date="${date}"]`);
+    const head = root.querySelector(".facts-year-head");
+    if (target) root.parentElement.scrollLeft = Math.max(0, target.offsetLeft - head.offsetWidth - 2 * target.offsetWidth);
+  }
+
+  // ---------- selected day: one state, one writer ----------
+  // `selected` is the date shown in the day card (default: next class).
+  // select() is the only writer; it repaints the card, marks the column,
+  // and mirrors the choice in the URL (#day-YYYY-MM-DD) so it can be shared.
+  const dayFromHash = () => {
+    const m = /^#day-(\d{4}-\d{2}-\d{2})$/.exec(location.hash);
+    return m && timeline.includes(m[1]) ? m[1] : null;
+  };
+  let selected = dayFromHash() || (next ? next.date : null);
+
+  function select(date, userAction) {
+    selected = date;
+    if (userAction || dayFromHash()) {
+      const url = next && date === next.date ? location.pathname + location.search : `#day-${date}`;
+      history.replaceState(null, "", url);
+    }
+    renderDayCard();
+    for (const el of document.querySelectorAll(".facts-year-col[data-date]"))
+      el.classList.toggle("is-selected", el.dataset.date === selected);
+    if (userAction) {
+      // Keep the strip AND the card in view: if the card is off-screen,
+      // scroll so the strip sits at the top with the card right under it.
+      const r = document.getElementById("next").getBoundingClientRect();
+      if (r.top < 0 || r.top > innerHeight - 160) {
+        const bar = document.querySelector(".topbar");
+        const barH = bar && getComputedStyle(bar).position !== "static" ? bar.offsetHeight : 0;
+        const top = document.getElementById("year").getBoundingClientRect().top + scrollY - barH - 12;
+        scrollTo({ top, behavior: "smooth" });
+      }
+    }
+  }
+
+  function relDays(date) {
+    const d = daysBetween(TODAY, date);
+    return d === 0 ? "Today!" : d === 1 ? "Tomorrow" : d === -1 ? "Yesterday" : d > 1 ? `In ${d} days` : `${-d} days ago`;
+  }
+
+  function renderDayCard() {
     const root = document.getElementById("next");
+    root.textContent = "";
     if (problems.length) root.appendChild(h("p", { class: "facts-warn", text: "⚠ " + problems.join(" · ") }));
-    if (!next) {
+    if (!selected) {
       root.appendChild(h("div", { class: "facts-next" },
         h("p", { class: "facts-next-title", text: "That's a wrap — thank you for a wonderful year!" })));
       return;
     }
-    const days = daysBetween(TODAY, next.date);
-    const when = days === 0 ? "Today!" : days === 1 ? "Tomorrow" : `In ${days} days`;
-    const mats = materialsOf(next.n);
+    const s = sessionByDate[selected];
+    const isNext = next && s && s.n === next.n;
+    const eyebrow = isNext ? "Next class" : s ? (selected < TODAY ? "Past class" : "Coming up")
+      : C.closures.includes(selected) ? "No class" : "Event";
+    const mats = s ? materialsOf(s.n) : [];
     const toShowcase = showcase ? sessions.filter((x) => x.date >= TODAY && x.date < showcase.date).length : 0;
-    root.appendChild(h("div", { class: "facts-next" },
-      h("p", { class: "facts-next-eyebrow", text: "Next class" }),
-      h("p", { class: "facts-next-count", text: when }),
-      h("a", { class: "facts-next-title", href: `#s-${next.n}`,
-        text: `Session ${next.n} of ${sessions.length} · ${dateLong(next.date)}` }),
-      (eventsByDate[next.date] || []).map((e) => h("p", { class: "facts-tag facts-tag--event", text: e.title })),
-      mats.length
-        ? [h("p", { class: "facts-next-lead", text: "Watch before class:" }),
+    root.appendChild(h("div", { class: `facts-next ${isNext ? "" : "is-other"}` },
+      h("div", { class: "facts-next-top" },
+        h("p", { class: "facts-next-eyebrow", text: eyebrow }),
+        !isNext && next ? h("button", { class: "facts-next-back", type: "button", text: "← back to next class" }) : null),
+      h("p", { class: "facts-next-count", text: relDays(selected) }),
+      h("p", { class: "facts-next-title",
+        text: s ? `Session ${s.n} of ${sessions.length} · ${dateLong(selected)}` : dateLong(selected) }),
+      (eventsByDate[selected] || []).map((e) => h("p", { class: "facts-tag facts-tag--event", text: e.who ? `${e.title} · ${e.who}` : e.title })),
+      !s && C.closures.includes(selected) ? h("p", { class: "facts-empty", text: "No ensemble class this Friday — enjoy the break." }) : null,
+      s ? (mats.length
+        ? [h("p", { class: "facts-next-lead", text: selected < TODAY ? "What we used:" : "Watch before class:" }),
            h("div", { class: "facts-scroll" }, h("div", { class: "facts-mats" }, mats.map((m) => materialLink(m))))]
-        : h("p", { class: "facts-empty", text: "Nothing to watch yet — just bring your picks and your ears." }),
+        : h("p", { class: "facts-empty", text: "Nothing to watch yet — just bring your picks and your ears." })) : null,
       h("div", { class: "facts-next-stats" },
         showcase && showcase.date >= TODAY
           ? h("p", { class: "facts-stat" },
@@ -251,6 +300,9 @@
         h("p", { class: "facts-stat" },
           h("span", { class: "facts-stat-num", "data-watch-count": "" }),
           h("span", { text: "videos watched" })))));
+    const back = root.querySelector(".facts-next-back");
+    if (back) back.addEventListener("click", () => { select(next.date, false); scrollYearTo(next.date); });
+    paintWatched();
   }
 
   function renderTools() {
@@ -272,12 +324,22 @@
         class: ["facts-session", s.date < TODAY ? "is-past" : "", next && s.n === next.n ? "is-next" : ""].join(" "),
       },
         h("span", { class: "facts-session-n", text: String(s.n) }),
-        h("span", { class: "facts-session-date", text: dateShort(s.date) }),
+        h("a", { class: "facts-session-date", href: `#day-${s.date}`, text: dateShort(s.date) }),
         h("span", { class: "facts-session-tags" },
           (eventsByDate[s.date] || []).map((e) => h("span", { class: "facts-tag facts-tag--event", text: e.title }))),
         h("span", { class: "facts-session-mats" },
           mats.length ? mats.map((m) => materialLink(m)) : h("span", { class: "facts-empty", text: "nothing to watch yet" }))));
     }
+  }
+
+  function wireSessionDates() {
+    for (const a of document.querySelectorAll(".facts-session-date"))
+      a.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        const date = a.getAttribute("href").slice(5);
+        select(date, true);
+        scrollYearTo(date);
+      });
   }
 
   function renderSongs() {
@@ -353,7 +415,6 @@
   }
 
   renderYear();
-  renderNext();
   renderTools();
   renderSessions();
   renderSongs();
@@ -362,5 +423,8 @@
   renderPhotos();
   renderGlossary();
   renderFooterNotes();
+  wireSessionDates();
+  if (selected) { select(selected, false); scrollYearTo(selected); } else renderDayCard();
+  addEventListener("hashchange", () => { const d = dayFromHash(); if (d) { select(d, true); scrollYearTo(d); } });
   paintWatched();
 })();
