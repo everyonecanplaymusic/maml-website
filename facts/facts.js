@@ -10,7 +10,7 @@
 // glossary (FACTS.glossary).
 //
 // Two registries:
-//   MATERIAL_KINDS — how a material (video / app / page) is linked
+//   MATERIAL_KINDS — how a material (video / app / page / read) is linked
 //   BLOCK_KINDS    — how a content block (p, list, checklist, …) is drawn
 // To support something new, add a registry entry first, then use it in
 // facts-data.js.
@@ -78,8 +78,10 @@
   if (C.expectedCount && C.dates.length !== C.expectedCount)
     problems.push(`${C.dates.length} class dates, source says ${C.expectedCount}`);
   for (const d of [...C.dates, ...C.closures]) if (parse(d).getDay() !== 5) problems.push(`${d} is not a Friday`);
-  const refs = [...F.tools, ...Object.values(F.plan).flat(), ...F.songs.flatMap((s) => s.materials)];
+  const refs = [...F.tools, ...F.everyClass.materials, ...Object.values(F.plan).flat(), ...F.songs.flatMap((s) => s.materials)];
   for (const id of refs) if (!materialById[id]) problems.push(`unknown material "${id}"`);
+  for (const m of F.materials) if (m.kind === "read" && !F.sections.some((x) => x.id === m.section))
+    problems.push(`material "${m.id}" points at missing section "${m.section}"`);
   if (problems.length) console.error("[facts] data problems:\n" + problems.join("\n"));
 
   // ---------- "I watched it" — one Set, one writer ----------
@@ -109,6 +111,7 @@
     video: { icon: "▶", href: (m) => `#v-${m.id}`, meta: (m) => (VIDEOS[m.id] ? fmtDur(VIDEOS[m.id].seconds) : "video") },
     app:   { icon: "↗", href: (m) => m.url, external: true, meta: () => "app" },
     page:  { icon: "→", href: (m) => SITE + m.path, meta: () => "guide" },
+    read:  { icon: "↓", href: (m) => `#${m.section}`, meta: () => "read" },
   };
   function materialLink(m, cls) {
     const kind = MATERIAL_KINDS[m.kind];
@@ -194,9 +197,10 @@
       const mark = evs.some((e) => e.kind === "showcase") ? "★" : evs.some((e) => e.kind === "finale") ? "♪" : null;
       const state = !s ? "off" : next && s.n === next.n ? "next" : date < TODAY ? "past" : "future";
       const scale = state === "next" ? 1.5 : 1;
-      const col = h("a", {
+      const col = h("div", {
         class: `facts-year-col is-${state} ${month !== lastMonth ? "is-month-start" : ""}`,
-        href: `#day-${date}`,
+        role: "button",
+        tabindex: "0",
         "data-date": date,
         title: s ? `Session ${s.n} · ${dateLong(date)}` : `${dateLong(date)}${C.closures.includes(date) ? " · no class" : ""}`,
       },
@@ -211,7 +215,10 @@
         h("div", { class: "facts-year-lane facts-year-n", text: s ? String(s.n) : C.closures.includes(date) ? "off" : "" }),
         h("div", { class: "facts-year-lane facts-year-events" },
           evs.map((e) => h("span", { class: "facts-year-event", title: e.who || null, text: e.title }))));
-      col.addEventListener("click", (ev) => { ev.preventDefault(); select(date, true); });
+      col.addEventListener("click", () => select(date, true));
+      col.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(date, true); }
+      });
       root.appendChild(col);
       lastMonth = month;
     }
@@ -228,26 +235,17 @@
 
   // ---------- selected day: one state, one writer ----------
   // `selected` is the date shown in the day card (default: next class).
-  // select() is the only writer; it repaints the card, marks the column,
-  // and mirrors the choice in the URL (#day-YYYY-MM-DD) so it can be shared.
-  const dayFromHash = () => {
-    const m = /^#day-(\d{4}-\d{2}-\d{2})$/.exec(location.hash);
-    return m && timeline.includes(m[1]) ? m[1] : null;
-  };
-  let selected = dayFromHash() || (next ? next.date : null);
+  // select() is the only writer; it repaints the card and marks the column.
+  let selected = next ? next.date : null;
 
   function select(date, userAction) {
     selected = date;
-    if (userAction || dayFromHash()) {
-      const url = next && date === next.date ? location.pathname + location.search : `#day-${date}`;
-      history.replaceState(null, "", url);
-    }
     renderDayCard();
     for (const el of document.querySelectorAll(".facts-year-col[data-date]"))
       el.classList.toggle("is-selected", el.dataset.date === selected);
     if (userAction) {
       // Keep the strip AND the card in view: if the card is off-screen,
-      // scroll so the strip sits at the top with the card right under it.
+      // scroll so the strip sits just under the sticky topbar.
       const r = document.getElementById("next").getBoundingClientRect();
       if (r.top < 0 || r.top > innerHeight - 160) {
         const bar = document.querySelector(".topbar");
@@ -286,6 +284,9 @@
       h("p", { class: "facts-next-title",
         text: s ? `Session ${s.n} of ${sessions.length} · ${dateLong(selected)}` : dateLong(selected) }),
       (eventsByDate[selected] || []).map((e) => h("p", { class: "facts-tag facts-tag--event", text: e.who ? `${e.title} · ${e.who}` : e.title })),
+      s ? h("div", { class: "facts-everyclass" },
+        h("span", { text: F.everyClass.text }),
+        F.everyClass.materials.map((id) => materialLink(materialById[id]))) : null,
       !s && C.closures.includes(selected) ? h("p", { class: "facts-empty", text: "No ensemble class this Friday — enjoy the break." }) : null,
       s ? (mats.length
         ? [h("p", { class: "facts-next-lead", text: selected < TODAY ? "What we used:" : "Watch before class:" }),
@@ -324,7 +325,7 @@
         class: ["facts-session", s.date < TODAY ? "is-past" : "", next && s.n === next.n ? "is-next" : ""].join(" "),
       },
         h("span", { class: "facts-session-n", text: String(s.n) }),
-        h("a", { class: "facts-session-date", href: `#day-${s.date}`, text: dateShort(s.date) }),
+        h("button", { class: "facts-session-date", type: "button", "data-date": s.date, text: dateShort(s.date) }),
         h("span", { class: "facts-session-tags" },
           (eventsByDate[s.date] || []).map((e) => h("span", { class: "facts-tag facts-tag--event", text: e.title }))),
         h("span", { class: "facts-session-mats" },
@@ -333,13 +334,8 @@
   }
 
   function wireSessionDates() {
-    for (const a of document.querySelectorAll(".facts-session-date"))
-      a.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        const date = a.getAttribute("href").slice(5);
-        select(date, true);
-        scrollYearTo(date);
-      });
+    for (const b of document.querySelectorAll(".facts-session-date"))
+      b.addEventListener("click", () => { select(b.dataset.date, true); scrollYearTo(b.dataset.date); });
   }
 
   function renderSongs() {
@@ -425,6 +421,5 @@
   renderFooterNotes();
   wireSessionDates();
   if (selected) { select(selected, false); scrollYearTo(selected); } else renderDayCard();
-  addEventListener("hashchange", () => { const d = dayFromHash(); if (d) { select(d, true); scrollYearTo(d); } });
   paintWatched();
 })();

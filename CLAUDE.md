@@ -386,6 +386,12 @@ registry in `topnav.js`.
 - **One class only.** The contract email also lists the Friday
   Folk Arts Class (T. Senfu · T. John) and Black Heritage Day —
   other teachers' classes; keep them OFF this page.
+- **Tuning is every class** (booklet: "well tuned before each
+  class") — shown on every day card via `everyClass`; the
+  tuning *lesson* is session 3 only.
+- `plan` is filled for sessions 1–22 with every existing
+  material, as a PROPOSED order (rationale in the comment above
+  `plan`). 23–28 wait for Citadel / rice-song materials.
 - **Never split by grade.** Both grade bands share one program.
   Each song has several levels; any student picks any level
   (a young student may play a hard version). Record levels per
@@ -403,7 +409,7 @@ registry in `topnav.js`.
   they share one x-axis. Clicking a column (or a date in the
   session list) selects that day: one state `selected`, one
   writer `select()`, which repaints the day card right under
-  the strip and sets `#day-YYYY-MM-DD` (shareable). Never make
+  the strip. No per-day URLs (Teacher's call). Never make
   a column jump the page to a far-away anchor — that read as
   "clicking does nothing".
 - `facts/build-videos.sh` — rebuilds `facts/videos/*.mp4|jpg`

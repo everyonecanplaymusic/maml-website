@@ -18,7 +18,8 @@
 //                (video / app / page). Videos are built from the
 //                originals by build-videos.sh.
 //   plan       ← session number → material ids. A session with no entry
-//                shows "nothing to watch yet" — never fill it with a guess.
+//                shows "nothing to watch yet". Only real, existing
+//                materials go in; the order is a proposal (see plan).
 //   songs      ← pieces for this year, each with its materials.
 //   sections   ← long-form content blocks (booklet text, story…), drawn
 //                with BLOCK_KINDS in facts.js.
@@ -78,6 +79,7 @@ window.FACTS = {
   //                 is the source path inside archive/facts-originals/)
   // kind: "app"   → external MAML app, opens in a new tab
   // kind: "page"  → a page on this site (path relative to site root)
+  // kind: "read"  → a section further down THIS page (id in `sections`)
   // group         → which shelf of the video library it sits on (videoGroups)
   materials: [
     // getting started
@@ -154,6 +156,12 @@ window.FACTS = {
     { id: "tab-sakura-melody", kind: "app", title: "Sakura — melody tab",
       url: "https://anhthuphan.com/DanTranhTab/?score=Sakura_folksong_Japanese_Melody" },
 
+    // sections on this page — so the schedule can point at them
+    { id: "read-welcome", kind: "read", section: "welcome", title: "Our pledge + what's in your bag" },
+    { id: "read-meet", kind: "read", section: "meet", title: "Meet the đàn tranh — the 17 strings" },
+    { id: "read-picks", kind: "read", section: "picks", title: "Picks and the rest stroke" },
+    { id: "read-story", kind: "read", section: "story", title: "Story: The Tale of Trầu Cau" },
+
     // MAML Basics pages
     { id: "basics-your-dan-tranh", kind: "page", title: "You and your đàn tranh", path: "basics/your-dan-tranh/" },
     { id: "basics-tuning", kind: "page", title: "Tuning — the 17 strings", path: "basics/tuning/" },
@@ -171,15 +179,54 @@ window.FACTS = {
   // Toolbox strip — "open these before every class".
   tools: ["tuner", "tab", "freeplay", "basics-your-dan-tranh", "basics-tuning", "basics-tablature"],
 
+  // ---- every class ---------------------------------------------------
+  // Shown on every session's day card. Source: booklet — "Your đàn tranh
+  // should be well tuned before each class and at demos."
+  everyClass: {
+    text: "Every class: tune first. Your đàn tranh should be well tuned before each class.",
+    materials: ["tuner"],
+  },
+
   // ---- lesson plan: session number → material ids --------------------
-  // Placement follows the 2020 FACTS folder: tuning was "Week 3", and the
-  // two instrument-care clips are numbered 03 and 04 (before tuning's 10).
-  // Everything else lives under Songs / All videos until Teacher Nhan
-  // places it on a date. Edit freely — the page rebuilds from this map.
+  // PROPOSED ORDER (Sep 2026) — for Teacher Nhan to adjust. Built only
+  // from materials that exist, in this order:
+  //   1–3   getting started, following the 2020 FACTS weeks (week 2:
+  //         sitting, carrying, picks, story; week 3: picking up the
+  //         đàn, counting + naming strings, tuner, nail fitting)
+  //   4–6   reading tablature + Exercises 1–2; Trầu Cau story (2020
+  //         paired story with music)
+  //   7–9   the five technique clips (glide, bend, vibration)
+  //   10–13 Mother Ocean (its clips practise vibrato, learned in 9)
+  //   14–18 One Mother, A Hundred Children (A, B, A-A-B, rhythm, whole)
+  //   19–21 Sakura — promised at the 2026 Showcase for this year
+  //   22    the two Showcase-2026 songs together
+  //   23–28 left empty: On Top of the Citadel and the rice-transplanting
+  //         song have no materials yet; fill when they exist
+  //   29    Showcase (May 14) · 30 last class
+  // Edit freely — the page rebuilds from this map.
   plan: {
-    1: ["unpack-and-pack", "basics-your-dan-tranh"],
-    2: ["check-at-home"],
-    3: ["tuning", "basics-tuning", "tuner"],
+    1: ["read-welcome", "unpack-and-pack", "basics-your-dan-tranh"],
+    2: ["check-at-home", "read-picks"],
+    3: ["tuning", "read-meet", "basics-tuning", "tuner"],
+    4: ["basics-tablature", "tab-exercise-1"],
+    5: ["tab-exercise-1", "read-story"],
+    6: ["tab-exercise-2"],
+    7: ["tech-glide-1", "tech-glide-2"],
+    8: ["tech-play-then-bend", "tech-play-after-bend"],
+    9: ["tech-vibration"],
+    10: ["mother-ocean-vibrato"],
+    11: ["mother-ocean-sung-2"],
+    12: ["mother-ocean-chords"],
+    13: ["mother-ocean-octave"],
+    14: ["one-mother-a"],
+    15: ["one-mother-b"],
+    16: ["one-mother-aab"],
+    17: ["one-mother-rhythm"],
+    18: ["one-mother-whole"],
+    19: ["tab-sakura-melody"],
+    20: ["tab-sakura"],
+    21: ["tab-sakura"],
+    22: ["mother-ocean-vibrato", "one-mother-whole"],
   },
 
   // ---- songs this year -----------------------------------------------
