@@ -386,6 +386,12 @@ registry in `topnav.js`.
 - **One class only.** The contract email also lists the Friday
   Folk Arts Class (T. Senfu · T. John) and Black Heritage Day —
   other teachers' classes; keep them OFF this page.
+- **Teacher names live ONLY in `teachers`** (facts-data.js). The
+  lead teacher (Ngô Thanh Nhàn) is shown once, in the page header.
+  Temporary teachers are listed with their dates and appear only on
+  those days (year strip, day card, session list), always alongside
+  the lead. Never write a teacher's name into prose, song notes or
+  source lines — say "your teacher".
 - **Tuning is every class** (booklet: "well tuned before each
   class") — shown on every day card via `everyClass`; the
   tuning *lesson* is session 3 only.

@@ -255,3 +255,6 @@
 .facts-songs-intro { margin: 0 0 8px; max-width: 70ch; font-size: 17px; font-weight: 600; color: var(--ink); }
 .facts-everyclass { display: flex; align-items: center; flex-wrap: nowrap; gap: 14px; margin: 4px 0 16px; padding: 10px 14px; border-left: 2px solid var(--ink); background: #fff; font-size: 14px; overflow-x: auto; }
 .facts-everyclass > .facts-mat { flex: 0 0 auto; }
+.facts-teacher { margin: -8px 0 18px; font-size: 17px; font-weight: 600; color: var(--ink); }
+.facts-teachers-today { margin: 0 0 14px; font-size: 15px; color: var(--ink-2); }
+.facts-year-teacher { top: auto; bottom: 2px; border-color: var(--line); color: var(--ink-2); }

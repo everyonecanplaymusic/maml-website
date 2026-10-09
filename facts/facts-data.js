@@ -1,8 +1,8 @@
 // facts-data.js — SINGLE SOURCE OF TRUTH for the FACTS 2026–27 page.
 //
 // FACTS = Folk Arts-Cultural Treasures Charter School, Philadelphia.
-// This page is for ONE class: the Friday Đàn Tranh Ensemble taught by
-// Teacher Ngô Thanh Nhàn (grades 5–6 and 7–8). The contract email also
+// This page is for ONE class: the Friday Đàn Tranh Ensemble, lead
+// teacher in `teachers` below (grades 5–6 and 7–8). The contract email also
 // lists a "Friday Folk Arts Class" (T. Senfu · T. John) and Black
 // Heritage Day (T. Senfu · T. Kenny) — those are other classes and are
 // deliberately NOT on this page.
@@ -32,8 +32,20 @@
 window.FACTS = {
   SOURCES: {
     contract: "Ensemble Artist Contract Details 2026-27 (MAML email, Aug 25, 2026)",
-    booklet: "Học Đàn Tranh — 2026–2027 Introduction, grades 5–6 and 7–8, by Teacher Ngô Thanh Nhàn",
+    booklet: "Học Đàn Tranh — 2026–2027 Introduction, grades 5–6 and 7–8 (by the lead teacher)",
     showcase2026: "Spring Showcase 2026 introducers' script (FACTS 2026)",
+  },
+
+  // ---- teachers --------------------------------------------------------
+  // The ONLY place a teacher's name lives. The lead teacher is shown once,
+  // in the page header. Temporary teachers appear only on their dates,
+  // always alongside the lead teacher. Prose elsewhere must not repeat
+  // names — say "your teacher" instead.
+  teachers: {
+    lead: "Ngô Thanh Nhàn",
+    temporary: [
+      { name: "Victoria Ruslan", dates: ["2026-10-09"] },
+    ],
   },
 
   // ---- calendar ------------------------------------------------------
@@ -58,7 +70,7 @@ window.FACTS = {
     {
       date: "2027-02-03",
       title: "Lunar New Year (Tết)",
-      who: "T. John · T. Nhan",
+      // Contract email: "Lunar New Year: Feb. 3rd (for T. John and T. Nhan)".
     },
     {
       date: "2027-05-14",
@@ -188,7 +200,7 @@ window.FACTS = {
   },
 
   // ---- lesson plan: session number → material ids --------------------
-  // PROPOSED ORDER (Sep 2026) — for Teacher Nhan to adjust. Built only
+  // PROPOSED ORDER (Sep 2026) — for the lead teacher to adjust. Built only
   // from materials that exist, in this order:
   //   1–3   getting started, following the 2020 FACTS weeks (week 2:
   //         sitting, carrying, picks, story; week 3: picking up the
@@ -230,7 +242,7 @@ window.FACTS = {
   },
 
   // ---- songs this year -----------------------------------------------
-  // Teaching principle (Teacher Nhan): ONE shared program for grades 5–6
+  // Teaching principle (lead teacher): ONE shared program for grades 5–6
   // and 7–8 — never split by grade. Each song comes in several levels; a
   // younger student may play a hard version, an older one an easy one.
   // When a song has leveled versions, list them under `levels`
@@ -244,7 +256,7 @@ window.FACTS = {
     {
       id: "warmups",
       title: "Warm-ups",
-      about: "Two exercises by Teacher Ngô Thanh Nhàn — play along in the Tab app.",
+      about: "Two exercises written for this ensemble — play along in the Tab app.",
       materials: ["tab-exercise-1", "tab-exercise-2"],
     },
     {
@@ -263,7 +275,7 @@ window.FACTS = {
     {
       id: "sakura",
       title: "Sakura Sakura (“Cherry Blossoms”)",
-      about: "A Japanese folk song in the “In” scale. Teacher Nhan played it at the 2026 Showcase and promised: we'll learn this song next year — that's now!",
+      about: "A Japanese folk song in the “In” scale. Your teacher played it at the 2026 Showcase and promised: we'll learn this song next year — that's now!",
       materials: ["tab-sakura", "tab-sakura-melody"],
     },
     {
@@ -360,7 +372,7 @@ window.FACTS = {
 
   // Where each section's text comes from (shown under the section).
   sectionSources: {
-    booklet: "From the 2026–27 Introduction booklet by Teacher Ngô Thanh Nhàn.",
+    booklet: "From the 2026–27 Introduction booklet.",
     trauCau: "Retold by YWCM for the FACTS ensemble (Week 2, Oct 26, 2020); edited for reading.",
   },
 

@@ -70,6 +70,7 @@
   const materialById = Object.fromEntries(F.materials.map((m) => [m.id, m]));
   const materialsOf = (n) => (F.plan[n] || []).map((id) => materialById[id]).filter(Boolean);
   const showcase = F.events.find((e) => e.kind === "showcase");
+  const tempTeachersOn = (date) => F.teachers.temporary.filter((t) => t.dates.includes(date));
   const timeline = [...new Set([...C.dates, ...C.closures, ...Object.keys(eventsByDate)])].sort();
   const next = sessions.find((s) => s.date >= TODAY) || null;
 
@@ -82,6 +83,8 @@
   for (const id of refs) if (!materialById[id]) problems.push(`unknown material "${id}"`);
   for (const m of F.materials) if (m.kind === "read" && !F.sections.some((x) => x.id === m.section))
     problems.push(`material "${m.id}" points at missing section "${m.section}"`);
+  for (const t of F.teachers.temporary)
+    for (const d of t.dates) if (!sessionByDate[d]) problems.push(`temporary teacher ${t.name}: ${d} is not a class date`);
   if (problems.length) console.error("[facts] data problems:\n" + problems.join("\n"));
 
   // ---------- "I watched it" — one Set, one writer ----------
@@ -214,7 +217,8 @@
           h("span", { class: "facts-year-date", text: String(d.getDate()) })),
         h("div", { class: "facts-year-lane facts-year-n", text: s ? String(s.n) : C.closures.includes(date) ? "off" : "" }),
         h("div", { class: "facts-year-lane facts-year-events" },
-          evs.map((e) => h("span", { class: "facts-year-event", title: e.who || null, text: e.title }))));
+          evs.map((e) => h("span", { class: "facts-year-event", text: e.title })),
+          tempTeachersOn(date).map((t) => h("span", { class: "facts-year-event facts-year-teacher", text: `T. ${t.name}` }))));
       col.addEventListener("click", () => select(date, true));
       col.addEventListener("keydown", (ev) => {
         if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(date, true); }
@@ -283,7 +287,13 @@
       h("p", { class: "facts-next-count", text: relDays(selected) }),
       h("p", { class: "facts-next-title",
         text: s ? `Session ${s.n} of ${sessions.length} · ${dateLong(selected)}` : dateLong(selected) }),
-      (eventsByDate[selected] || []).map((e) => h("p", { class: "facts-tag facts-tag--event", text: e.who ? `${e.title} · ${e.who}` : e.title })),
+      (eventsByDate[selected] || []).map((e) => h("p", { class: "facts-tag facts-tag--event", text: e.title })),
+      tempTeachersOn(selected).length
+        ? h("p", { class: "facts-teachers-today" },
+            h("strong", { text: "Teachers today: " }),
+            `${F.teachers.lead} (lead) · `,
+            tempTeachersOn(selected).map((t) => `${t.name} (temporary teacher)`).join(" · "))
+        : null,
       s ? h("div", { class: "facts-everyclass" },
         h("span", { text: F.everyClass.text }),
         F.everyClass.materials.map((id) => materialLink(materialById[id]))) : null,
@@ -327,7 +337,8 @@
         h("span", { class: "facts-session-n", text: String(s.n) }),
         h("button", { class: "facts-session-date", type: "button", "data-date": s.date, text: dateShort(s.date) }),
         h("span", { class: "facts-session-tags" },
-          (eventsByDate[s.date] || []).map((e) => h("span", { class: "facts-tag facts-tag--event", text: e.title }))),
+          (eventsByDate[s.date] || []).map((e) => h("span", { class: "facts-tag facts-tag--event", text: e.title })),
+          tempTeachersOn(s.date).map((t) => h("span", { class: "facts-tag", text: `with T. ${t.name} (temporary)` }))),
         h("span", { class: "facts-session-mats" },
           mats.length ? mats.map((m) => materialLink(m)) : h("span", { class: "facts-empty", text: "nothing to watch yet" }))));
     }
@@ -404,6 +415,10 @@
       root.append(h("dt", { lang: "vi", text: g.term }), h("dd", { text: g.meaning }));
   }
 
+  function renderTeacher() {
+    document.getElementById("teacher").textContent = `Teacher ${F.teachers.lead}`;
+  }
+
   function renderFooterNotes() {
     document.getElementById("thanks").textContent = "Special thanks to " + F.thanks.join(" · ");
     document.getElementById("calsource").textContent =
@@ -418,6 +433,7 @@
   renderSections();
   renderPhotos();
   renderGlossary();
+  renderTeacher();
   renderFooterNotes();
   wireSessionDates();
   if (selected) { select(selected, false); scrollYearTo(selected); } else renderDayCard();
