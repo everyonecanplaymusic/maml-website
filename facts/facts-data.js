@@ -198,7 +198,6 @@ window.FACTS = {
     { id: "read-welcome", kind: "read", section: "welcome", title: "Our pledge + what's in your bag" },
     { id: "read-meet", kind: "read", section: "meet", title: "Meet the đàn tranh — the 17 strings" },
     { id: "read-picks", kind: "read", section: "picks", title: "Picks and the rest stroke" },
-    { id: "read-story", kind: "read", section: "story", title: "Story: The Tale of Trầu Cau" },
     { id: "read-pentatonic", kind: "read", section: "pentatonic", title: "The five-note scale — with Bobby McFerrin" },
 
     // MAML Basics pages
@@ -232,10 +231,11 @@ window.FACTS = {
   // FACTS page ("Dan Tranh Main Page Script", Sep 2020): carrying/sitting
   // → tuning → Exercise 1–2 → songs → pentatonic song → improvisation,
   // and on the 2020 week folders (week 2: sitting, carrying, picks, story;
-  // week 3: strings, tuner, nail fitting). Built only from materials that exist:
+  // week 3: strings, tuner, nail fitting). The 2020 Trầu Cau story is
+  // NOT taught (teacher's call, Oct 2026). Built only from materials that exist:
   //   1–3   getting started
-  //   4–6   reading tablature + Exercises 1–2; Trầu Cau story; the
-  //         pentatonic scale (McFerrin) — the old page's "pentatonic" step
+  //   4–6   reading tablature + Exercises 1–2; the pentatonic scale
+  //         (McFerrin) — the old page's "pentatonic" step
   //   7–9   the five technique clips (glide, bend, vibration); Twinkle
   //         needs bends for F and B, so it comes right after them
   //   10–13 Mother Ocean (its clips practise vibrato, learned in 9)
@@ -252,7 +252,7 @@ window.FACTS = {
     2: ["check-at-home", "read-picks"],
     3: ["tuning", "read-meet", "basics-tuning", "tuner"],
     4: ["basics-tablature", "tab-exercise-1"],
-    5: ["tab-exercise-1", "read-story"],
+    5: ["tab-exercise-1"],
     6: ["tab-exercise-2", "read-pentatonic"],
     7: ["tech-glide-1", "tech-glide-2"],
     8: ["tech-play-then-bend", "tech-play-after-bend"],
@@ -398,31 +398,12 @@ window.FACTS = {
         { type: "youtube", id: "ne6tB2KiZuk", title: "Bobby McFerrin Demonstrates the Power of the Pentatonic Scale" },
       ],
     },
-    {
-      id: "story",
-      title: "Story time: The Tale of Trầu Cau",
-      source: "trauCau",
-      blocks: [
-        { type: "p", text: "This is a story about the origins of three offerings that every Vietnamese wedding must have." },
-        { type: "steps", items: [
-          "Some four thousand years ago, there were twin brothers who loved each other very much. Their parents passed away when they were young, so they came to live with a teacher for 17 years.",
-          "They studied hard and were smart. The teacher's daughter fell in love with them but could not tell one from the other. She cooked a meal for the two brothers and noticed that the younger one waited for the older one to eat first. So she asked her parents to let her marry the older one — back then, the older brother was expected to have a family first.",
-          "One day after the wedding, the twins came home from work and the wife mistook the younger brother for her husband and hugged him, because they looked identical. The older brother grew jealous and distant from his younger brother.",
-          "The younger brother was very sad. He left home and walked until he couldn't walk any more. He sat down by a river for so long that he died and became a limestone rock.",
-          "The older brother, missing his younger brother, went looking for him. He too could walk no further when he reached the river. He sat down and cried for so long that he died and became an areca palm next to the limestone.",
-          "The wife at home went looking for her husband and could not walk any further at the river either. She sat down and cried and cried. She died too, and became a betel vine with leaves growing around the limestone and the areca palm.",
-          "Villagers discovered that chewing the areca nut, the betel leaf and a little ground limestone together was tasty. These three have become the offerings at every Vietnamese wedding — a sign of relationships that can't be broken, even by death.",
-        ] },
-        { type: "p", text: "In class we tell the story, then play it: what happens in the story, and what happens in the music?" },
-      ],
-    },
   ],
 
   // Where each section's text comes from (shown under the section).
   sectionSources: {
     booklet: "From the 2026–27 Introduction booklet.",
     mcferrin: "Video: World Science Festival (YouTube). On the old FACTS page as “Natural pentatonic with Bobby McFerrin”.",
-    trauCau: "Retold by YWCM for the FACTS ensemble (Week 2, Oct 26, 2020); edited for reading.",
   },
 
   // The 17 open strings — from the booklet's string/pitch table.
@@ -451,7 +432,6 @@ window.FACTS = {
     { term: "nhạn", meaning: "the wooden bridges under the strings — literally “swallows” (the bird)" },
     { term: "trục", meaning: "the tuning pegs at the narrow end" },
     { term: "Huế", meaning: "the old imperial capital of Vietnam" },
-    { term: "trầu cau", meaning: "betel leaf and areca nut, offered at every Vietnamese wedding" },
     { term: "Tết", meaning: "Lunar New Year" },
   ],
 };
