@@ -428,6 +428,15 @@ registry in `topnav.js`.
   the strip. No per-day URLs (Teacher's call). Never make
   a column jump the page to a far-away anchor — that read as
   "clicking does nothing".
+- **Cache-busting (stamps).** maml.us (Cloudflare) lets browsers keep
+  .js/.css for 4 hours (max-age=14400) while HTML is always fresh — an
+  edit to facts-data.js was invisible to the teacher for hours. Every
+  local .js/.css in facts/index.html therefore carries `?v=<content
+  hash>`. After editing ANY of them (incl. shared styles.css, topnav.js)
+  run `sh facts/stamp.sh`; `.git/hooks/pre-commit` runs
+  `stamp.sh --check` and blocks a commit with a stale stamp. Never edit
+  a `?v=` by hand. (Other site pages have the same 4h lag — not yet
+  stamped.)
 - `facts/build-videos.sh` — rebuilds `facts/videos/*.mp4|jpg`
   and the AUTO-GENERATED `videos/videos.js` (durations) from
   `archive/facts-originals/` (gitignored, ~2.6 GB: every FACTS
