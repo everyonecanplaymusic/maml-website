@@ -399,8 +399,15 @@ registry in `topnav.js`.
   material, as a PROPOSED order modeled on the old FACTS page
   ("Dan Tranh Main Page Script", 2020: carrying/sitting → tuning →
   Exercise 1–2 → songs → pentatonic → improvisation); rationale in
-  the comment above `plan`. 23–28 wait for Citadel / rice-song
-  materials.
+  the comment above `plan`. "On Top of the Citadel" IS Khổng Minh
+  Tọa Lầu (the octave score's subtitle); sessions 23–26 teach its
+  levels, 27–28 review the three Showcase songs. Only the
+  rice-transplanting song still has no materials. The Trầu Cau story
+  is not taught (teacher's call).
+- **Song library = ONE public store**: the Đàn Tranh Tab app
+  (~/Code/DanTranhTab/public/scores). Display titles live only in its
+  `public/scores/catalog.json` ("Song Title · Version"; rules in its
+  ADDING-SONGS.md). Don't keep songs anywhere else.
 - **Tabs live in the Đàn Tranh Tab app** (repo ~/Code/DanTranhTab;
   add songs there with `node scripts/add-scores.mjs <file>` — it
   checks, commits to main and deploys). On this page a `tab`

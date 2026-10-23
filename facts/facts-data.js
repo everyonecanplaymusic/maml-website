@@ -189,6 +189,14 @@ window.FACTS = {
       { label: "4a", score: "Mot-Me-Tram-Con_Level-4a" },
       { label: "4b", score: "Mot-Me-Tram-Con_Level-4b" },
     ] },
+    // Khổng Minh Tọa Lầu = "On Top of the Citadel": the octave file's subtitle
+    // reads "On Top of the Citadel" (~/Scores/musicxml/Khong-Minh-toa-lau).
+    { id: "tab-citadel", kind: "levels", title: "On Top of the Citadel — tab", levels: [
+      { label: "1", score: "Khong-Minh-Toa-Lau_Level-1" },
+      { label: "2", score: "Khong-Minh-Toa-Lau_Level-2" },
+      { label: "3", score: "Khong-Minh-Toa-Lau_Level-3" },
+      { label: "Octaves", score: "Khong-Minh-Toa-Lau_Octaves" },
+    ] },
     { id: "tab-twinkle", kind: "levels", title: "Twinkle — tab", levels: [
       { label: "1", score: "Twinkle-Twinkle-Little-Star_Level-1" },
       { label: "2", score: "Twinkle-Twinkle-Little-Star_Level-2" },
@@ -242,8 +250,9 @@ window.FACTS = {
   //   14–18 One Mother, A Hundred Children (A, B, A-A-B, rhythm, whole)
   //   19–21 Sakura — promised at the 2026 Showcase for this year
   //   22    the two Showcase-2026 songs together
-  //   23–28 left empty: On Top of the Citadel and the rice-transplanting
-  //         song have no materials yet; fill when they exist
+  //   23–26 On Top of the Citadel (Khổng Minh Tọa Lầu) — Level 1, 2, 3, Octaves
+  //   27    the three Showcase songs together · 28 Showcase run-through
+  //         (the rice-transplanting song still has no materials)
   //   29    Showcase (May 14) · 30 last class
   // Every song session links the song's tab in all its levels (`levels`):
   // students pick a level, never assigned by grade.
@@ -270,6 +279,12 @@ window.FACTS = {
     20: ["tab-sakura"],
     21: ["tab-sakura"],
     22: ["mother-ocean-vibrato", "one-mother-whole", "tab-mother-ocean", "tab-one-mother"],
+    23: ["tab-citadel"],
+    24: ["tab-citadel"],
+    25: ["tab-citadel"],
+    26: ["tab-citadel"],
+    27: ["tab-mother-ocean", "tab-one-mother", "tab-citadel"],
+    28: ["one-mother-whole", "tab-mother-ocean", "tab-one-mother", "tab-citadel"],
   },
 
   // ---- songs this year -----------------------------------------------
@@ -300,9 +315,9 @@ window.FACTS = {
     },
     {
       id: "citadel",
-      title: "On Top of the Citadel",
+      title: "On Top of the Citadel (Khổng Minh Tọa Lầu)",
       about: "A song about bravery for the community. Performed at the Spring Showcase 2026.",
-      materials: [],
+      materials: ["tab-citadel"],
     },
     {
       id: "sakura",
@@ -432,6 +447,7 @@ window.FACTS = {
     { term: "nhạn", meaning: "the wooden bridges under the strings — literally “swallows” (the bird)" },
     { term: "trục", meaning: "the tuning pegs at the narrow end" },
     { term: "Huế", meaning: "the old imperial capital of Vietnam" },
+    { term: "Khổng Minh Tọa Lầu", meaning: "the Vietnamese name of On Top of the Citadel — “Khổng Minh sits on the citadel tower”" },
     { term: "Tết", meaning: "Lunar New Year" },
   ],
 };
