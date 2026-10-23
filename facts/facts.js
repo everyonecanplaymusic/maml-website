@@ -10,7 +10,7 @@
 // glossary (FACTS.glossary).
 //
 // Two registries:
-//   MATERIAL_KINDS — how a material (video / app / page / read) is linked
+//   MATERIAL_KINDS — how a material (video / app / tab / levels / page / read) is linked
 //   BLOCK_KINDS    — how a content block (p, list, checklist, …) is drawn
 // To support something new, add a registry entry first, then use it in
 // facts-data.js.
@@ -109,15 +109,25 @@
   }
 
   // ---------- MATERIAL_KINDS ----------
+  const tabUrl = (score) => `${F.TAB_APP}?score=${encodeURIComponent(score)}`;
   const fmtDur = (s) => `${Math.floor(s / 60)}:${pad(Math.round(s % 60))}`;
   const MATERIAL_KINDS = {
     video: { icon: "▶", href: (m) => `#v-${m.id}`, meta: (m) => (VIDEOS[m.id] ? fmtDur(VIDEOS[m.id].seconds) : "video") },
     app:   { icon: "↗", href: (m) => m.url, external: true, meta: () => "app" },
+    tab:   { icon: "♪", href: (m) => tabUrl(m.score), external: true, meta: () => "tab" },
+    // A song in several levels: one row, one button per level, each opening
+    // that level's tab directly. Drawn by `render` instead of a single link.
+    levels: { render: (m, cls) => h("span", { class: `facts-levels ${cls || ""}` },
+      h("span", { class: "facts-mat-icon", "aria-hidden": "true", text: "♪" }),
+      h("span", { class: "facts-levels-title", text: m.title }),
+      m.levels.map((l) => h("a", { class: "facts-level", href: tabUrl(l.score), target: "_blank", rel: "noopener",
+        title: `${m.title} · ${l.label}`, text: l.label }))) },
     page:  { icon: "→", href: (m) => SITE + m.path, meta: () => "guide" },
     read:  { icon: "↓", href: (m) => `#${m.section}`, meta: () => "read" },
   };
   function materialLink(m, cls) {
     const kind = MATERIAL_KINDS[m.kind];
+    if (kind.render) return kind.render(m, cls);
     return h("a", {
       class: `facts-mat facts-mat--${m.kind} ${cls || ""}`,
       href: kind.href(m),
@@ -157,6 +167,17 @@
     strings: () => h("div", { class: "facts-scroll" }, h("table", { class: "facts-strings" },
       h("tr", {}, h("th", { text: "String" }), F.strings.map((_, i) => h("td", { text: String(i + 1) }))),
       h("tr", {}, h("th", { text: "Pitch" }), F.strings.map((p) => h("td", { text: p }))))),
+    // YouTube, click-to-load: only a thumbnail until the student presses play
+    // (no third-party player or cookies on page load).
+    youtube: (b) => {
+      const box = h("button", { class: "facts-yt", type: "button", "aria-label": `Play: ${b.title}` },
+        h("img", { src: `https://i.ytimg.com/vi/${b.id}/hqdefault.jpg`, alt: "", loading: "lazy" }),
+        h("span", { class: "facts-yt-play", "aria-hidden": "true", text: "▶" }));
+      box.addEventListener("click", () => box.replaceWith(h("iframe", {
+        class: "facts-yt", src: `https://www.youtube-nocookie.com/embed/${b.id}?autoplay=1`, title: b.title,
+        allow: "autoplay; encrypted-media; picture-in-picture", allowfullscreen: "" })), { once: true });
+      return h("figure", { class: "facts-figure" }, box, h("figcaption", { text: b.title }));
+    },
     table: (b) => h("div", { class: "facts-scroll" }, h("table", { class: "facts-table" },
       h("tr", {}, b.head.map((t) => h("th", { text: t })), h("th", {})),
       b.rows.map((r) => h("tr", {}, r.slice(0, b.head.length).map((t) => h("td", { text: t })),

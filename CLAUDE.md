@@ -396,8 +396,18 @@ registry in `topnav.js`.
   class") — shown on every day card via `everyClass`; the
   tuning *lesson* is session 3 only.
 - `plan` is filled for sessions 1–22 with every existing
-  material, as a PROPOSED order (rationale in the comment above
-  `plan`). 23–28 wait for Citadel / rice-song materials.
+  material, as a PROPOSED order modeled on the old FACTS page
+  ("Dan Tranh Main Page Script", 2020: carrying/sitting → tuning →
+  Exercise 1–2 → songs → pentatonic → improvisation); rationale in
+  the comment above `plan`. 23–28 wait for Citadel / rice-song
+  materials.
+- **Tabs live in the Đàn Tranh Tab app** (repo ~/Code/DanTranhTab;
+  add songs there with `node scripts/add-scores.mjs <file>` — it
+  checks, commits to main and deploys). On this page a `tab`
+  material links one `score` id, a `levels` material links a song
+  in every level as one row of buttons. App URL is `TAB_APP`, once.
+  After changing either side run `node facts/check-tabs.mjs` — it
+  fails if any linked score id is missing from the live app.
 - **Never split by grade.** Both grade bands share one program.
   Each song has several levels; any student picks any level
   (a young student may play a hard version). Record levels per
@@ -408,9 +418,9 @@ registry in `topnav.js`.
   (booklet text, story), photos (captions come from
   `photos-meta.js`), glossary. Edit only this.
 - `facts/facts.js` — renderer with two registries:
-  `MATERIAL_KINDS` (video / app / page) and `BLOCK_KINDS`
-  (h3, p, list, steps, checklist, image, images, strings,
-  table). Validates 30 Fridays + every referenced material id.
+  `MATERIAL_KINDS` (video / app / tab / levels / page / read) and
+  `BLOCK_KINDS` (h3, p, list, steps, checklist, image, images,
+  strings, table, youtube — click-to-load, youtube-nocookie). Validates 30 Fridays + every referenced material id.
   The year strip draws bridges and dates in the SAME column so
   they share one x-axis. Clicking a column (or a date in the
   session list) selects that day: one state `selected`, one

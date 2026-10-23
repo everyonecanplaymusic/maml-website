@@ -86,10 +86,17 @@ window.FACTS = {
     },
   ],
 
+  // The Đàn Tranh Tab app. `tab` / `levels` materials link to TAB_APP + "?score=<id>".
+  TAB_APP: "https://anhthuphan.com/DanTranhTab/",
+
   // ---- materials registry -------------------------------------------
   // kind: "video" → facts/videos/<id>.mp4 (built by build-videos.sh; `origin`
   //                 is the source path inside archive/facts-originals/)
   // kind: "app"   → external MAML app, opens in a new tab
+  // kind: "tab"   → one song in the Đàn Tranh Tab app (`score` = its ?score= id)
+  // kind: "levels"→ one song in several levels/versions, each a tab score;
+  //                 drawn as one row of buttons so a student picks a level
+  //                 and lands straight on that tab (no hunting in the library)
   // kind: "page"  → a page on this site (path relative to site root)
   // kind: "read"  → a section further down THIS page (id in `sections`)
   // group         → which shelf of the video library it sits on (videoGroups)
@@ -159,25 +166,46 @@ window.FACTS = {
     { id: "freeplay", kind: "app", title: "Free Play",
       hint: "Play freely, with the app listening along.",
       url: "https://anhthuphan.com/DanTranhTab/#freeplay" },
-    { id: "tab-exercise-1", kind: "app", title: "Exercise 1 — play-along tab",
-      url: "https://anhthuphan.com/DanTranhTab/?score=Exercise-1_dan-tranh" },
-    { id: "tab-exercise-2", kind: "app", title: "Exercise 2 — play-along tab",
-      url: "https://anhthuphan.com/DanTranhTab/?score=Exercise-2_dan-tranh" },
-    { id: "tab-sakura", kind: "app", title: "Sakura — đàn tranh tab",
-      url: "https://anhthuphan.com/DanTranhTab/?score=Sakura_folksong_Japanese_Tranh" },
-    { id: "tab-sakura-melody", kind: "app", title: "Sakura — melody tab",
-      url: "https://anhthuphan.com/DanTranhTab/?score=Sakura_folksong_Japanese_Melody" },
+    // tablature in the Đàn Tranh Tab app — ids are the app's ?score= ids
+    { id: "tab-exercise-1", kind: "tab", title: "Exercise 1 — play-along tab", score: "Exercise-1_dan-tranh" },
+    { id: "tab-exercise-2", kind: "tab", title: "Exercise 2 — play-along tab", score: "Exercise-2_dan-tranh" },
+    { id: "tab-sakura", kind: "tab", title: "Sakura — đàn tranh tab", score: "Sakura_folksong_Japanese_Tranh" },
+    { id: "tab-sakura-melody", kind: "tab", title: "Sakura — melody tab", score: "Sakura_folksong_Japanese_Melody" },
+    // Leveled sets, easiest first (by number of notes). Added to the app
+    // Oct 2026 from the FACTS teacher files (DanTranhTab scripts/add-scores.mjs).
+    { id: "tab-mother-ocean", kind: "levels", title: "Mother Ocean — tab", levels: [
+      { label: "Sung", score: "Me-Trung-Duong_Sung" },
+      { label: "Rhythm", score: "Me-Trung-Duong_Rhythm" },
+      { label: "Level 1", score: "Me-Trung-Duong_Level-1" },
+      { label: "Chords", score: "Me-Trung-Duong_Chords" },
+      { label: "Octaves", score: "Me-Trung-Duong_Octaves" },
+      { label: "Level 4", score: "Me-Trung-Duong_Level-4" },
+    ] },
+    { id: "tab-one-mother", kind: "levels", title: "One Mother — tab", levels: [
+      { label: "1", score: "Mot-Me-Tram-Con_Level-1" },
+      { label: "2", score: "Mot-Me-Tram-Con_Level-2" },
+      { label: "3a", score: "Mot-Me-Tram-Con_Level-3a" },
+      { label: "3b", score: "Mot-Me-Tram-Con_Level-3b" },
+      { label: "4a", score: "Mot-Me-Tram-Con_Level-4a" },
+      { label: "4b", score: "Mot-Me-Tram-Con_Level-4b" },
+    ] },
+    { id: "tab-twinkle", kind: "levels", title: "Twinkle — tab", levels: [
+      { label: "1", score: "Twinkle-Twinkle-Little-Star_Level-1" },
+      { label: "2", score: "Twinkle-Twinkle-Little-Star_Level-2" },
+    ] },
 
     // sections on this page — so the schedule can point at them
     { id: "read-welcome", kind: "read", section: "welcome", title: "Our pledge + what's in your bag" },
     { id: "read-meet", kind: "read", section: "meet", title: "Meet the đàn tranh — the 17 strings" },
     { id: "read-picks", kind: "read", section: "picks", title: "Picks and the rest stroke" },
     { id: "read-story", kind: "read", section: "story", title: "Story: The Tale of Trầu Cau" },
+    { id: "read-pentatonic", kind: "read", section: "pentatonic", title: "The five-note scale — with Bobby McFerrin" },
 
     // MAML Basics pages
     { id: "basics-your-dan-tranh", kind: "page", title: "You and your đàn tranh", path: "basics/your-dan-tranh/" },
     { id: "basics-tuning", kind: "page", title: "Tuning — the 17 strings", path: "basics/tuning/" },
     { id: "basics-tablature", kind: "page", title: "How to read the tablature", path: "basics/tablature-reading/" },
+    { id: "page-twinkle", kind: "page", title: "Twinkle — MAML repertoire page", path: "repertoire/twinkle-twinkle/" },
   ],
 
   // Shelves of the video library, in order.
@@ -200,14 +228,16 @@ window.FACTS = {
   },
 
   // ---- lesson plan: session number → material ids --------------------
-  // PROPOSED ORDER (Sep 2026) — for the lead teacher to adjust. Built only
-  // from materials that exist, in this order:
-  //   1–3   getting started, following the 2020 FACTS weeks (week 2:
-  //         sitting, carrying, picks, story; week 3: picking up the
-  //         đàn, counting + naming strings, tuner, nail fitting)
-  //   4–6   reading tablature + Exercises 1–2; Trầu Cau story (2020
-  //         paired story with music)
-  //   7–9   the five technique clips (glide, bend, vibration)
+  // PROPOSED ORDER — for the lead teacher to adjust. Modeled on the old
+  // FACTS page ("Dan Tranh Main Page Script", Sep 2020): carrying/sitting
+  // → tuning → Exercise 1–2 → songs → pentatonic song → improvisation,
+  // and on the 2020 week folders (week 2: sitting, carrying, picks, story;
+  // week 3: strings, tuner, nail fitting). Built only from materials that exist:
+  //   1–3   getting started
+  //   4–6   reading tablature + Exercises 1–2; Trầu Cau story; the
+  //         pentatonic scale (McFerrin) — the old page's "pentatonic" step
+  //   7–9   the five technique clips (glide, bend, vibration); Twinkle
+  //         needs bends for F and B, so it comes right after them
   //   10–13 Mother Ocean (its clips practise vibrato, learned in 9)
   //   14–18 One Mother, A Hundred Children (A, B, A-A-B, rhythm, whole)
   //   19–21 Sakura — promised at the 2026 Showcase for this year
@@ -215,30 +245,31 @@ window.FACTS = {
   //   23–28 left empty: On Top of the Citadel and the rice-transplanting
   //         song have no materials yet; fill when they exist
   //   29    Showcase (May 14) · 30 last class
-  // Edit freely — the page rebuilds from this map.
+  // Every song session links the song's tab in all its levels (`levels`):
+  // students pick a level, never assigned by grade.
   plan: {
     1: ["read-welcome", "unpack-and-pack", "basics-your-dan-tranh"],
     2: ["check-at-home", "read-picks"],
     3: ["tuning", "read-meet", "basics-tuning", "tuner"],
     4: ["basics-tablature", "tab-exercise-1"],
     5: ["tab-exercise-1", "read-story"],
-    6: ["tab-exercise-2"],
+    6: ["tab-exercise-2", "read-pentatonic"],
     7: ["tech-glide-1", "tech-glide-2"],
     8: ["tech-play-then-bend", "tech-play-after-bend"],
-    9: ["tech-vibration"],
-    10: ["mother-ocean-vibrato"],
-    11: ["mother-ocean-sung-2"],
-    12: ["mother-ocean-chords"],
-    13: ["mother-ocean-octave"],
-    14: ["one-mother-a"],
-    15: ["one-mother-b"],
-    16: ["one-mother-aab"],
-    17: ["one-mother-rhythm"],
-    18: ["one-mother-whole"],
+    9: ["tech-vibration", "tab-twinkle"],
+    10: ["mother-ocean-vibrato", "tab-mother-ocean"],
+    11: ["mother-ocean-sung-2", "tab-mother-ocean"],
+    12: ["mother-ocean-chords", "tab-mother-ocean"],
+    13: ["mother-ocean-octave", "tab-mother-ocean"],
+    14: ["one-mother-a", "tab-one-mother"],
+    15: ["one-mother-b", "tab-one-mother"],
+    16: ["one-mother-aab", "tab-one-mother"],
+    17: ["one-mother-rhythm", "tab-one-mother"],
+    18: ["one-mother-whole", "tab-one-mother"],
     19: ["tab-sakura-melody"],
     20: ["tab-sakura"],
     21: ["tab-sakura"],
-    22: ["mother-ocean-vibrato", "one-mother-whole"],
+    22: ["mother-ocean-vibrato", "one-mother-whole", "tab-mother-ocean", "tab-one-mother"],
   },
 
   // ---- songs this year -----------------------------------------------
@@ -263,7 +294,8 @@ window.FACTS = {
       id: "mother-ocean-one-mother",
       title: "Mother Ocean + One Mother, A Hundred Children",
       about: "Two songs played together, retelling how the Vietnamese people began — from the Ocean. Performed at the Spring Showcase 2026.",
-      materials: ["mother-ocean-vibrato", "mother-ocean-chords", "mother-ocean-octave",
+      materials: ["tab-mother-ocean", "tab-one-mother",
+                  "mother-ocean-vibrato", "mother-ocean-chords", "mother-ocean-octave",
                   "one-mother-a", "one-mother-b", "one-mother-whole"],
     },
     {
@@ -277,6 +309,13 @@ window.FACTS = {
       title: "Sakura Sakura (“Cherry Blossoms”)",
       about: "A Japanese folk song in the “In” scale. Your teacher played it at the 2026 Showcase and promised: we'll learn this song next year — that's now!",
       materials: ["tab-sakura", "tab-sakura-melody"],
+    },
+    {
+      id: "twinkle",
+      title: "Twinkle, Twinkle, Little Star",
+      // Source: "Hooktheory List for Facts 2020-2021" — a student's choice that year.
+      about: "Chosen by a FACTS student in 2020–21. Its F and B are not on the open strings — press to bend up to them.",
+      materials: ["tab-twinkle", "page-twinkle"],
     },
     {
       id: "rice",
@@ -351,6 +390,15 @@ window.FACTS = {
       ],
     },
     {
+      id: "pentatonic",
+      title: "The five-note scale",
+      source: "mcferrin",
+      blocks: [
+        { type: "p", text: "Our đàn tranh is tuned to five notes — C D E G A — repeated up the strings. That five-note scale is called pentatonic. Watch Bobby McFerrin show a whole audience that they already know it." },
+        { type: "youtube", id: "ne6tB2KiZuk", title: "Bobby McFerrin Demonstrates the Power of the Pentatonic Scale" },
+      ],
+    },
+    {
       id: "story",
       title: "Story time: The Tale of Trầu Cau",
       source: "trauCau",
@@ -373,6 +421,7 @@ window.FACTS = {
   // Where each section's text comes from (shown under the section).
   sectionSources: {
     booklet: "From the 2026–27 Introduction booklet.",
+    mcferrin: "Video: World Science Festival (YouTube). On the old FACTS page as “Natural pentatonic with Bobby McFerrin”.",
     trauCau: "Retold by YWCM for the FACTS ensemble (Week 2, Oct 26, 2020); edited for reading.",
   },
 

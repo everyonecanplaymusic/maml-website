@@ -258,3 +258,14 @@
 .facts-teacher { margin: -8px 0 18px; font-size: 17px; font-weight: 600; color: var(--ink); }
 .facts-teachers-today { margin: 0 0 14px; font-size: 15px; color: var(--ink-2); }
 .facts-year-teacher { top: auto; bottom: 2px; border-color: var(--line); color: var(--ink-2); }
+
+/* ---------- tab in levels: one row, one button per level ---------- */
+.facts-levels { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 8px; padding: 8px 10px 8px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); white-space: nowrap; }
+.facts-levels-title { font-weight: 600; font-size: 15px; margin-right: 4px; }
+.facts-level { display: inline-flex; align-items: center; min-width: 34px; height: 30px; padding: 0 9px; justify-content: center; font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: none; border: 1px solid var(--line); border-radius: var(--radius); }
+.facts-level:hover { border-color: var(--ink); }
+
+/* ---------- YouTube, click-to-load ---------- */
+.facts-yt { position: relative; display: block; width: min(640px, 100%); aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: var(--radius); background: #111; cursor: pointer; overflow: hidden; }
+.facts-yt img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.facts-yt-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 46px; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
