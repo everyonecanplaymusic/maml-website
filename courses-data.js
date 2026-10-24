@@ -31,6 +31,44 @@ window.COURSE_INSTRUMENTS = {
   "dan-bau":   { label: "đàn bầu",   en: "Vietnamese monochord",        vi: "độc huyền cầm" },
 };
 
+/* Apps and books a course can point students to. Each renders as a
+   card with the link AND a QR code that courses.js generates from
+   `url` at render time — the QR can never drift from the link.
+   A course lists the ids it shows, in order, in `resources`.
+   Descriptions come from the apps' own pages / the MAML apps list
+   (index.html) / anhthuphan.com/books.html — don't invent features. */
+window.COURSE_RESOURCES = {
+  "dan-tranh-tab": {
+    kind: "app",
+    url: "https://anhthuphan.com/DanTranhTab/",
+    title: "Đàn Tranh Tab",
+    en: "repertoire library · 130+ songs, regional styles",
+    vi: "thư viện bài bản · hơn 130 bài, phong cách vùng miền",
+  },
+  "air-dan-bau": {
+    kind: "app",
+    url: "https://anhthuphan.com/AirDanBau/",
+    title: "Air Đàn Bầu",
+    en: "play the đàn bầu in the air — one string, harmonic nodes, a tension lever",
+    vi: "chơi đàn bầu trên không — một dây, các nút bồi âm, cần đàn",
+  },
+  "book-dan-tranh": {
+    kind: "book",
+    url: "https://anhthuphan.com/books.html",
+    title: "Introducing Đàn Tranh Techniques & Expressions",
+    en: "Anh-Thư Phan, Tô Thùy Kim & Ngô Thanh Nhàn — technique illustrations, " +
+        "đàn tranh tablature, video tutorials for three folk songs from the three regions",
+    vi: "minh hoạ kỹ thuật, tab đàn tranh, video hướng dẫn ba bài dân ca ba miền",
+  },
+  "ly-con-sao": {
+    kind: "app",
+    url: "https://anhthuphan.com/LyConSao/",
+    title: "Lý Con Sáo · Bắc Trung Nam",
+    en: "the three regional versions on one pitch axis — listen, see, sing and play along",
+    vi: "ba bản ba miền trên cùng một trục cao độ — nghe, thấy, hát và đàn theo",
+  },
+};
+
 window.COURSE_DAYS = {
   mon: { en: "Mondays",   vi: "thứ Hai" },
   thu: { en: "Thursdays", vi: "thứ Năm" },
@@ -80,6 +118,7 @@ window.COURSES = [
         body: "available — $250–$400 deposit depending on model",
         body_vi: "có cho mượn nhạc cụ — $250–$400 tiền đặt cọc tùy loại đàn" },
     ],
+    resources: ["dan-tranh-tab", "air-dan-bau", "book-dan-tranh", "ly-con-sao"],
     studentHash: "719ae97b495e89f98a0c0d181fc020b2addbd7abc8c40d19119e7d87349701ec", // fALL26
     teacherHash: "ebd9a6ca5bcdba23234f8674f76e825c2e28fece7d5e5e94a1c922beacb7af17", // tEACHfall26
   },

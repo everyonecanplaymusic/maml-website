@@ -489,7 +489,13 @@ Three pages, one renderer (`courses.js`), one registry:
   dates and the repertoire (Lý Con Sáo Nam / Huế / Quan Họ Bắc
   Ninh) but no per-session content, so its topics are empty until
   the teacher supplies them. The companion app (~/Code/Lyconsao) is
-  not deployed yet — link it from the md once it is.
+  live at anhthuphan.com/LyConSao/ and listed in the apps strip.
+- **Apps & book** strip: `COURSE_RESOURCES` in courses-data.js (url,
+  title, en/vi description taken from the app's own page / the MAML
+  apps list / anhthuphan.com/books.html); a course picks ids in
+  `resources`. Each card = link + QR generated from the SAME url at
+  render time (qrcode-generator@1.4.4 via CDN) — never paste a QR
+  image, it would drift from the link.
 - Flyers: `courses-assets/`, web JPEGs made from the originals
   (Fall 2026 set: ~/Downloads/Mekong Music Fall 2026 EN VN Flyers —
   portrait used here; square/landscape/banner are for other

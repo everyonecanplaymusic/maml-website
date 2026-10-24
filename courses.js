@@ -105,6 +105,7 @@
 
   const entryEl    = document.getElementById("courseEntry");
   const navEl      = document.getElementById("courseNav");
+  const resEl      = document.getElementById("courseResources");
   const listEl     = document.getElementById("scheduleList");
   const codeBtn    = document.getElementById("codeOpenBtn"); // public only
   let blurbEl      = null; // built by renderEntry()
@@ -924,11 +925,64 @@
     }
   }
 
+  /* ---------- apps & books: link + QR per resource ----------
+     course.resources lists ids from COURSE_RESOURCES. The QR is
+     generated from the same `url` as the link (qrcode-generator,
+     loaded in the page); without the library the card still
+     renders as a plain link. */
+  const RESOURCE_KIND = {
+    app:  { en: "app",  vi: "ứng dụng" },
+    book: { en: "book", vi: "sách" },
+  };
+
+  function qrSvg(url) {
+    if (typeof window.qrcode !== "function") return "";
+    const qr = window.qrcode(0, "M");
+    qr.addData(url);
+    qr.make();
+    return qr.createSvgTag({ cellSize: 4, margin: 8, scalable: true });
+  }
+
+  function renderResources() {
+    if (!resEl) return;
+    const all = window.COURSE_RESOURCES || {};
+    const items = (course.resources || []).map((id) => all[id]).filter(Boolean);
+    if (!items.length) return;
+    const shortUrl = (u) => u.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    resEl.innerHTML = `
+      <header class="resources-head">
+        <h2 class="resources-title">
+          <span class="en">Apps &amp; book</span>
+          <span class="vi">Ứng dụng &amp; sách</span>
+        </h2>
+        <p class="resources-note">
+          Scan a code with your phone, or click to open.
+          <em>Quét mã bằng điện thoại, hoặc bấm để mở.</em>
+        </p>
+      </header>
+      <div class="resources-strip">
+        ${items.map((r) => {
+          const kind = RESOURCE_KIND[r.kind] || { en: r.kind, vi: "" };
+          return `
+          <a class="resource-card" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">
+            <span class="resource-qr" aria-hidden="true">${qrSvg(r.url)}</span>
+            <span class="resource-kind">${kind.en} · <em>${kind.vi}</em></span>
+            <span class="resource-name">${escapeHtml(r.title)}</span>
+            <span class="resource-desc">${escapeHtml(r.en)}</span>
+            <span class="resource-desc-vi">${escapeHtml(r.vi)}</span>
+            <span class="resource-url">${escapeHtml(shortUrl(r.url))}</span>
+          </a>`;
+        }).join("")}
+      </div>
+    `;
+  }
+
   /* ---------- main load ---------- */
   async function load() {
     await checkAuth();
     renderEntry();
     renderCourseNav();
+    renderResources();
 
     let text;
     try {
