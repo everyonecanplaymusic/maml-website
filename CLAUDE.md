@@ -486,7 +486,7 @@ Three pages, one renderer (`courses.js`), one registry:
   detail (`## session N · theme|shared|dan-tranh|dan-bau`). Schema:
   `courses/dan-tranh-dan-bau-spring-2026.example.md`.
 - **Never guess a session topic.** Fall 2026's email/flyer give the
-  dates and the repertoire (Lý Con Sáo Gò Công / Huế / Quan Họ Bắc
+  dates and the repertoire (Lý Con Sáo Nam / Huế / Quan Họ Bắc
   Ninh) but no per-session content, so its topics are empty until
   the teacher supplies them. The companion app (~/Code/Lyconsao) is
   not deployed yet — link it from the md once it is.

@@ -9,6 +9,10 @@
   every `topic` is empty on purpose — fill it in as the lessons are
   planned or taught. Never guess a topic.
 
+  The southern version is titled "Lý Con Sáo Nam" on this page by
+  the course author's decision (2026-10-24), although the email and
+  flyer say "Lý Con Sáo Gò Công". Don't change it back.
+
   Structure (full schema: dan-tranh-dan-bau-spring-2026.example.md):
 
     1. Blurb — everything above the first table row.
@@ -43,7 +47,7 @@ connecting repertoire, introducing versions from the three
 regions of Vietnam: *Chu kỳ này lấy Lý Con Sáo làm bài xuyên
 suốt, giới thiệu các bản từ ba miền Việt Nam:*
 
-- **Lý Con Sáo Gò Công** — southern Vietnam · *miền Nam*
+- **Lý Con Sáo Nam** — southern Vietnam · *miền Nam*
 - **Lý Con Sáo Huế** — central Vietnam · *miền Trung*
 - **Lý Con Sáo Quan Họ Bắc Ninh** — northern Vietnam · *miền Bắc*
 
