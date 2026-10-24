@@ -1,47 +1,58 @@
 /* ============================================================
    Courses page — loader, mode-aware renderer, password modal
    ============================================================
-   This script is shared by two pages that render the same md
-   file in different modes:
+   This script is shared by three pages that render the same
+   course in different modes:
 
      courses.html           <ol id="scheduleList" data-mode="public">
      courses-students.html  <ol id="scheduleList" data-mode="students">
+     courses-teacher.html   <ol id="scheduleList" data-mode="teacher">
+
+   Which course: ?id=<id> from courses-data.js, else
+   COURSES_CURRENT. Everything course-specific (flyer, days,
+   times, meta, codes) comes from that registry entry; the md
+   file named there carries blurb, schedule and session detail.
 
    public mode  → schedule shows topics + locked video slots,
                   plus a "I have a code" button that opens a
                   password modal. On correct password the user
-                  is sent to courses-students.html.
+                  is sent to the students (or teacher) page.
    students mode → schedule shows topics + real YouTube links.
                    No modal, no button.
 
-   Password handling is honor-system: PASSWORD_HASH lives in this
-   file (so it deploys with the static site), the user's typed
-   password is sha256'd in the browser and compared against the
-   hash. View-source reveals the destination URL but not the
-   plaintext password. This matches the unlisted YouTube
+   Password handling is honor-system: the code hashes live in
+   courses-data.js (so they deploy with the static site), the
+   user's typed password is sha256'd in the browser and compared
+   against the hash. View-source reveals the destination URL but
+   not the plaintext password. This matches the unlisted YouTube
    semantics — the URL itself is the real "secret".
    ============================================================ */
 (function () {
-  const COURSE_MD = "courses/dan-tranh-dan-bau-spring-2026.md";
-  const STUDENTS_URL = "courses-students.html";
-  const TEACHER_URL  = "courses-teacher.html";
+  const COURSES = window.COURSES || [];
+  const requestedId = new URLSearchParams(location.search).get("id");
+  // Unknown or missing ?id= → the current course.
+  const course =
+    COURSES.find((c) => c.id === requestedId) ||
+    COURSES.find((c) => c.id === window.COURSES_CURRENT);
+  const isCurrent = course.id === window.COURSES_CURRENT;
 
-  // sha256("sprING26"). To rotate the student password, run
-  //   printf "%s" "newpassword" | shasum -a 256
-  // and replace the constant.
-  const PASSWORD_HASH =
-    "f7e1fb27c7e28a21ab5d2305ffac7afdd7ad18c353af348d5ff72625353c408c";
+  const PAGE_URL = {
+    public:   "courses.html",
+    students: "courses-students.html",
+    teacher:  "courses-teacher.html",
+  };
+  // The current course gets the bare URL; any other course
+  // carries its ?id= so the link keeps pointing at it.
+  function courseUrl(page, c) {
+    return c.id === window.COURSES_CURRENT
+      ? PAGE_URL[page]
+      : `${PAGE_URL[page]}?id=${encodeURIComponent(c.id)}`;
+  }
 
-  // sha256("tEACHspr26"). The teacher code unlocks
-  // courses-teacher.html (full video gallery + feedback view).
-  // Same rotation procedure as above.
-  const TEACHER_PASSWORD_HASH =
-    "f10e879985acdce855afc927745c69092734c1cd74d01902bf6effbe0d56174a";
-
-  // localStorage keys — set once on this device when the
-  // teacher (or student) types their code; subsequent visits
-  // skip the gate. Cleared by the browser's "clear site data".
-  const TEACHER_TOKEN_KEY = "maml_teacher_2026spring";
+  // localStorage key — set once on this device when the
+  // teacher types their code; subsequent visits skip the gate.
+  // One key per course. Cleared by "clear site data".
+  const teacherTokenKey = (c) => `maml_teacher_${c.id}`;
 
   /* ============================================================
      STUDENT VIDEO SHARING — Google Form + published Sheet
@@ -82,33 +93,21 @@
   const STUDENT_FORM_URL       = "";
   const STUDENT_SHEET_EDIT_URL = "";
 
-  /* Class times by (instrument, day). Hardcoded here so the
-     md file only has to carry session number, dates, topic,
-     and video IDs. If the schedule ever changes, edit both
-     this map and the course-meta block in the html files. */
-  const TIMES = {
-    "dan-tranh": {
-      sun: "10:40 am – 11:30 am",
-      thu: "6:30 pm – 7:20 pm",
-    },
-    "dan-bau": {
-      sun: "12:00 pm – 12:50 pm",
-      thu: "7:45 pm – 8:35 pm",
-    },
-  };
+  /* Class times by (instrument, day) come from the registry, so
+     the md file only has to carry session number, dates, topic,
+     and video IDs. Instrument order inside a session block =
+     key order of course.times (matches the course-meta list). */
+  const TIMES = course.times;
+  const DAYS = course.days;
+  const INSTRUMENT_ORDER = Object.keys(TIMES);
+  const INSTRUMENTS = window.COURSE_INSTRUMENTS || {};
+  const instLabel = (key) => (INSTRUMENTS[key] ? INSTRUMENTS[key].label : key);
 
-  const INSTRUMENT_LABEL = {
-    "dan-tranh": "đàn tranh",
-    "dan-bau":   "đàn bầu",
-  };
-
-  /* Visual order inside a session block: tranh first, bau
-     second — matches the top-of-page course-meta listing. */
-  const INSTRUMENT_ORDER = ["dan-tranh", "dan-bau"];
-
-  const blurbEl    = document.getElementById("courseBlurb");
+  const entryEl    = document.getElementById("courseEntry");
+  const navEl      = document.getElementById("courseNav");
   const listEl     = document.getElementById("scheduleList");
   const codeBtn    = document.getElementById("codeOpenBtn"); // public only
+  let blurbEl      = null; // built by renderEntry()
 
   const mode = (listEl && listEl.dataset.mode) || "public";
   const isStudents = mode === "students";
@@ -216,35 +215,57 @@
     return out;
   }
 
-  function groupBySession(rows) {
+  /* Rows become calendar entries of two kinds:
+       session — rows sharing a session number, one per instrument
+       break   — a row whose session cell is "break" (no class
+                 that week); its topic cell is the label
+     Entries are ordered by their first class day's date, so a
+     break sits between the sessions around it. */
+  function groupSchedule(rows) {
     const sessions = new Map();
+    const breaks = [];
+    const datesOf = (row) =>
+      Object.fromEntries(DAYS.map((d) => [d, row[d] || ""]));
+
     for (const row of rows) {
+      if ((row.session || "").toLowerCase() === "break") {
+        breaks.push({ kind: "break", dates: datesOf(row), topic: row.topic });
+        continue;
+      }
       const num = parseInt(row.session, 10);
       if (!num) continue;
-      if (!INSTRUMENT_LABEL[row.instrument]) continue;
+      if (!TIMES[row.instrument]) continue;
 
       let bucket = sessions.get(num);
       if (!bucket) {
         bucket = {
+          kind: "session",
           num,
-          sun: row.sun,
-          thu: row.thu,
+          dates: datesOf(row),
           instruments: {},
         };
         sessions.set(num, bucket);
       }
       bucket.instruments[row.instrument] = {
         topic: row.topic,
-        video_sun: row.video_sun,
-        video_thu: row.video_thu,
+        videos: Object.fromEntries(DAYS.map((d) => [d, row[`video_${d}`]])),
       };
     }
-    return Array.from(sessions.values()).sort((a, b) => a.num - b.num);
+    const first = (e) => e.dates[DAYS[0]] || "";
+    return [...sessions.values(), ...breaks].sort((a, b) =>
+      first(a) < first(b) ? -1 : first(a) > first(b) ? 1 : (a.num || 0) - (b.num || 0)
+    );
+  }
+
+  /* Topic cells may carry inline markdown (*title*, **rao**). */
+  function inlineMd(md) {
+    if (!md) return "";
+    return window.marked ? window.marked.parseInline(md) : escapeHtml(md);
   }
 
   /* ---------- video slot rendering ---------- */
   function videoSlot(day, videoId) {
-    const label = day === "sun" ? "sun" : "thu";
+    const label = day;
 
     if (!videoId) {
       // No recording yet — same in both modes.
@@ -336,15 +357,37 @@
     return grid;
   }
 
-  function renderSessions(sessions, details, videosBySession) {
+  /* "sat oct 24 · mon oct 26" — one date per class day. */
+  function sessionDates(dates) {
+    return DAYS.map(
+      (d) =>
+        `<span class="session-date"><span class="session-day">${d}</span> ${formatDate(dates[d] || "")}</span>`
+    ).join('<span class="session-date-sep">·</span>');
+  }
+
+  function renderBreak(b) {
+    const li = document.createElement("li");
+    li.className = "session-break";
+    li.innerHTML = `
+      <span class="session-break-topic">${inlineMd(b.topic) || "no class"}</span>
+      <span class="session-dates">${sessionDates(b.dates)}</span>
+    `;
+    return li;
+  }
+
+  function renderSessions(entries, details, videosBySession) {
     listEl.innerHTML = "";
-    if (sessions.length === 0) {
+    if (entries.length === 0) {
       listEl.innerHTML =
         '<li class="schedule-empty">schedule not available yet</li>';
       return;
     }
 
-    for (const s of sessions) {
+    for (const s of entries) {
+      if (s.kind === "break") {
+        listEl.appendChild(renderBreak(s));
+        continue;
+      }
       const li = document.createElement("li");
       li.className = "session-block";
 
@@ -353,11 +396,7 @@
       header.innerHTML = `
         <div class="session-header-row">
           <span class="session-num">session ${s.num}</span>
-          <span class="session-dates">
-            <span class="session-date"><span class="session-day">sun</span> ${formatDate(s.sun)}</span>
-            <span class="session-date-sep">·</span>
-            <span class="session-date"><span class="session-day">thu</span> ${formatDate(s.thu)}</span>
-          </span>
+          <span class="session-dates">${sessionDates(s.dates)}</span>
         </div>
       `;
       const themeMd = details && details.get(`${s.num}|theme`);
@@ -396,21 +435,20 @@
         const instLi = document.createElement("li");
         instLi.className = `instrument-row inst-${key}`;
 
+        const times = DAYS.map(
+          (d) =>
+            `<span class="instrument-time"><span class="instrument-day">${d}</span> ${TIMES[key][d] || ""}</span>`
+        ).join('<span class="instrument-time-sep">·</span>');
         instLi.innerHTML = `
           <div class="instrument-row-main">
             <div class="instrument-head">
               <span class="instrument-dot" aria-hidden="true"></span>
-              <span class="instrument-name">${INSTRUMENT_LABEL[key]}</span>
-              <span class="instrument-times">
-                <span class="instrument-time"><span class="instrument-day">sun</span> ${TIMES[key].sun}</span>
-                <span class="instrument-time-sep">·</span>
-                <span class="instrument-time"><span class="instrument-day">thu</span> ${TIMES[key].thu}</span>
-              </span>
+              <span class="instrument-name">${instLabel(key)}</span>
+              <span class="instrument-times">${times}</span>
             </div>
-            <div class="instrument-topic">${inst.topic || "—"}</div>
+            <div class="instrument-topic">${inlineMd(inst.topic) || "—"}</div>
             <div class="instrument-videos">
-              ${videoSlot("sun", inst.video_sun)}
-              ${videoSlot("thu", inst.video_thu)}
+              ${DAYS.map((d) => videoSlot(d, inst.videos[d])).join("")}
             </div>
           </div>
         `;
@@ -421,7 +459,7 @@
           detailEl.className = "instrument-detail";
           detailEl.innerHTML = `
             <header class="instrument-detail-head">
-              <span class="instrument-detail-label">${INSTRUMENT_LABEL[key]} technique &amp; homework</span>
+              <span class="instrument-detail-label">${instLabel(key)} technique &amp; homework</span>
               <span class="instrument-detail-label-vi">kỹ thuật &amp; bài tập riêng</span>
             </header>
           `;
@@ -513,21 +551,26 @@
       status.textContent = "";
       status.dataset.kind = "";
       const hash = await sha256(typed);
-      if (hash === PASSWORD_HASH) {
+      // Any course's code works here and lands on THAT course —
+      // the course on screen is checked first.
+      const ordered = [course, ...COURSES.filter((c) => c !== course)];
+      const asStudent = ordered.find((c) => c.studentHash === hash);
+      const asTeacher = ordered.find((c) => c.teacherHash === hash);
+      if (asStudent) {
         // Student code — go to the students page.
         status.dataset.kind = "ok";
         status.textContent = "ok →";
         setTimeout(() => {
-          window.location.href = STUDENTS_URL;
+          window.location.href = courseUrl("students", asStudent);
         }, 200);
-      } else if (hash === TEACHER_PASSWORD_HASH) {
+      } else if (asTeacher) {
         // Teacher code — set the device token here so the in-page
         // gate on the teacher page is skipped, then redirect.
         status.dataset.kind = "ok";
         status.textContent = "teacher →";
-        try { localStorage.setItem(TEACHER_TOKEN_KEY, "1"); } catch (e) {}
+        try { localStorage.setItem(teacherTokenKey(asTeacher), "1"); } catch (e) {}
         setTimeout(() => {
-          window.location.href = TEACHER_URL;
+          window.location.href = courseUrl("teacher", asTeacher);
         }, 200);
       } else {
         status.dataset.kind = "err";
@@ -756,9 +799,9 @@
   async function checkAuth() {
     if (!isTeacher) return;
     let token = null;
-    try { token = localStorage.getItem(TEACHER_TOKEN_KEY); } catch (e) {}
+    try { token = localStorage.getItem(teacherTokenKey(course)); } catch (e) {}
     if (token === "1") return;
-    await showAuthGate(TEACHER_PASSWORD_HASH, TEACHER_TOKEN_KEY, {
+    await showAuthGate(course.teacherHash, teacherTokenKey(course), {
       eyebrowEn: "Teacher access",
       eyebrowVi: "Truy cập của giáo viên",
       titleEn: "Enter the teacher code",
@@ -769,13 +812,127 @@
     });
   }
 
+  /* ---------- course entry: flyer + title + meta ----------
+     Built entirely from the registry entry. Each meta row is a
+     registry kind: `text` (authored html, optional body_vi line
+     underneath) or `instruments` (generated from course.times). */
+  const titleCase = (s) =>
+    s.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+  const META_KINDS = {
+    text: (row) =>
+      row.body +
+      (row.body_vi ? `<span class="course-meta-vi">${row.body_vi}</span>` : ""),
+    instruments: () =>
+      INSTRUMENT_ORDER.map((key) => {
+        const info = INSTRUMENTS[key] || {};
+        const times = DAYS.map(
+          (d) => `${(window.COURSE_DAYS[d] || { en: d }).en} ${TIMES[key][d] || ""}`
+        ).join(" · ");
+        const desc = info.en
+          ? ` <span class="course-meta-inst-desc">· ${info.en}${info.vi ? ` · <em>${info.vi}</em>` : ""}</span>`
+          : "";
+        return `<span class="course-meta-inst inst-${key}">
+            <span class="dot" aria-hidden="true"></span><span class="course-inst-name">${instLabel(key)}</span>${desc}
+            <span class="course-meta-times">${times}</span>
+          </span>`;
+      }).join(""),
+  };
+
+  function renderEntry() {
+    if (!entryEl) return;
+    const flyers = course.flyers || [];
+    const langLabel = { en: "English", vi: "Tiếng Việt" };
+    const flyerLangs =
+      flyers.length > 1
+        ? `<div class="course-flyer-langs" role="group" aria-label="flyer language">
+             ${flyers.map((f, i) =>
+               `<button type="button" data-flyer="${i}" aria-pressed="${i === 0}">${langLabel[f.lang] || f.lang}</button>`
+             ).join("")}
+           </div>`
+        : "";
+    const f0 = flyers[0];
+    const title = INSTRUMENT_ORDER.map(
+      (key) => `<span class="course-inst-name inst-${key}">${titleCase(instLabel(key))}</span>`
+    ).join('<span class="course-amp">&amp;</span>');
+    const meta = (course.meta || [])
+      .filter((row) => META_KINDS[row.kind])
+      .map((row) => `
+        <div>
+          <dt><span class="en">${row.en}</span><span class="vi">${row.vi}</span></dt>
+          <dd>${META_KINDS[row.kind](row)}</dd>
+        </div>`)
+      .join("");
+
+    entryEl.innerHTML = `
+      <div class="course-flyer">
+        ${f0 ? `<img src="${f0.src}" alt="${escapeHtml(f0.alt)}" width="${f0.width}" height="${f0.height}"
+                     class="course-flyer-img" draggable="false" />` : ""}
+        ${flyerLangs}
+      </div>
+
+      <div class="course-info">
+        <div class="course-kind">
+          <span class="en">${course.season.en} · ${course.kind.en}</span>
+          <span class="vi">${course.season.vi} · ${course.kind.vi}</span>
+        </div>
+        <h2 class="course-title">${title}</h2>
+        <p class="course-sub">${course.partner || ""}</p>
+
+        <div class="course-blurb" id="courseBlurb">
+          <p class="course-loading">loading…</p>
+        </div>
+
+        <dl class="course-meta">${meta}</dl>
+      </div>
+    `;
+    blurbEl = entryEl.querySelector("#courseBlurb");
+
+    const img = entryEl.querySelector(".course-flyer-img");
+    if (img) img.addEventListener("contextmenu", (e) => e.preventDefault());
+    entryEl.querySelectorAll("[data-flyer]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const f = flyers[Number(btn.dataset.flyer)];
+        img.src = f.src;
+        img.alt = f.alt;
+        entryEl.querySelectorAll("[data-flyer]").forEach((b) =>
+          b.setAttribute("aria-pressed", String(b === btn))
+        );
+      });
+    });
+  }
+
+  /* ---------- course nav: current ↔ earlier courses ----------
+     Under the hero intro. On the current course it lists the
+     earlier ones; on an earlier one it says so and links back. */
+  function renderCourseNav() {
+    if (!navEl) return;
+    const page = mode in PAGE_URL ? mode : "public";
+    const link = (c) =>
+      `<a href="${courseUrl(page, c)}">${c.season.en} <em>${c.season.vi}</em></a>`;
+    if (isCurrent) {
+      const earlier = COURSES.filter((c) => c !== course);
+      navEl.innerHTML = earlier.length
+        ? `<span class="course-nav-label">earlier courses · <em>khoá trước</em></span> ` +
+          earlier.map(link).join('<span class="course-nav-sep">·</span>')
+        : "";
+    } else {
+      const cur = COURSES.find((c) => c.id === window.COURSES_CURRENT);
+      navEl.innerHTML =
+        `<span class="course-nav-label">past course · <em>khoá đã qua</em></span> ` +
+        (cur ? `current course · <em>khoá hiện tại</em>: ${link(cur)} →` : "");
+    }
+  }
+
   /* ---------- main load ---------- */
   async function load() {
     await checkAuth();
+    renderEntry();
+    renderCourseNav();
 
     let text;
     try {
-      const res = await fetch(COURSE_MD, { cache: "no-store" });
+      const res = await fetch(course.md, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       text = await res.text();
     } catch (err) {
@@ -798,7 +955,7 @@
     renderBlurb(blurbMd.trim());
 
     const rows = parseTable(scheduleMd);
-    const sessions = groupBySession(rows);
+    const sessions = groupSchedule(rows);
     const details = parseDetails(scheduleMd);
 
     // Fetch student-submitted videos in parallel — they live in

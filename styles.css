@@ -2325,13 +2325,18 @@ body.lightbox-open {
   --bau:   #9b3f26;   /* warm ochre-red — đàn bầu monochord */
 }
 
-.dieu-tranh,
-.dieu-bau {
+/* One channel per instrument: `inst-<key>` (key from
+   courses-data.js) sets --accent; names, dots, rows and video
+   slots inside it all read --accent. (Not `.dieu` — that is the
+   site-wide genre highlight with the marker underline.) */
+.inst-dan-tranh { --accent: var(--tranh); }
+.inst-dan-bau   { --accent: var(--bau); }
+
+.course-inst-name {
   font-style: italic;
   font-weight: 700;
+  color: var(--accent);
 }
-.dieu-tranh { color: var(--tranh); }
-.dieu-bau   { color: var(--bau); }
 
 .courses-hero {
   max-width: var(--max);
@@ -2395,11 +2400,13 @@ body.lightbox-open {
   max-width: 420px;
 }
 
+/* No fixed aspect-ratio: the <img> carries the flyer's own
+   width/height (from courses-data.js), so square and portrait
+   flyers both reserve the right space before loading. */
 .course-flyer-img {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   user-select: none;
@@ -2407,9 +2414,82 @@ body.lightbox-open {
   -webkit-user-select: none;
 }
 
+/* EN / VI flyer switch — plain text, 1px underline on the
+   pressed one (same language as the topnav). */
+.course-flyer-langs {
+  display: flex;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.course-flyer-langs button {
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast);
+}
+
+.course-flyer-langs button:hover {
+  color: var(--ink);
+}
+
+.course-flyer-langs button[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom-color: var(--ink);
+}
+
 .course-info {
   min-width: 0;
   max-width: 64ch;
+}
+
+/* Under the hero intro: links between the current course and
+   earlier ones (built from the registry by courses.js). */
+.course-nav {
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.course-nav:empty {
+  display: none;
+}
+
+.course-nav-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 6px;
+}
+
+.course-nav-label em {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.course-nav a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.course-nav em {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.course-nav-sep {
+  margin: 0 8px;
+  color: var(--muted-2);
 }
 
 .course-kind {
@@ -2560,6 +2640,39 @@ body.lightbox-open {
   line-height: 1.6;
 }
 
+.course-meta dd a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Vietnamese line under an English meta value. */
+.course-meta-vi {
+  display: block;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* One line-pair per instrument in the "instruments" meta row. */
+.course-meta-inst {
+  display: block;
+}
+
+.course-meta-inst + .course-meta-inst {
+  margin-top: 6px;
+}
+
+.course-meta-inst-desc {
+  color: var(--muted);
+}
+
+.course-meta-times {
+  display: block;
+  padding-left: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
 .dot {
   display: inline-block;
   width: 8px;
@@ -2567,10 +2680,8 @@ body.lightbox-open {
   margin-right: 6px;
   vertical-align: 0;
   border-radius: 50%;
+  background: var(--accent);
 }
-
-.dot-tranh { background: var(--tranh); }
-.dot-bau   { background: var(--bau); }
 
 .course-schedule-section {
   max-width: var(--max);
@@ -3029,9 +3140,10 @@ body.auth-gated main {
 }
 
 /* One entry per session. A session is a single unit of
-   content taught twice — once on sunday and once on thursday.
-   Inside each block, two instrument rows (đàn tranh, đàn bầu)
-   each show their topic and two video slots, one per day. */
+   content taught once on each class day of the course (e.g.
+   saturday + monday). Inside each block, two instrument rows
+   (đàn tranh, đàn bầu) each show their topic and one video
+   slot per day. */
 .session-block {
   list-style: none;
   padding: 24px 0 28px;
@@ -3151,9 +3263,6 @@ body.auth-gated main {
   gap: 20px;
   align-items: start;
 }
-
-.instrument-row.inst-dan-tranh { --accent: var(--tranh); }
-.instrument-row.inst-dan-bau   { --accent: var(--bau); }
 
 .instrument-head {
   display: flex;
@@ -3277,6 +3386,32 @@ body.auth-gated main {
 
 .video-slot.is-unlocked:hover .video-day {
   color: #fff;
+}
+
+/* A no-class week (a `break` row in the md table) — one quiet
+   line between the sessions around it, no block chrome. */
+.session-break {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 24px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.session-break-topic {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.session-break-topic em {
+  color: var(--muted-2);
+}
+
+.session-break .session-dates {
+  color: var(--muted);
 }
 
 .schedule-loading,

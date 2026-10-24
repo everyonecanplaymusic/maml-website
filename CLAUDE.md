@@ -27,6 +27,8 @@ MAML Website/
 Filenames still carry the old `addrem-` prefix for historical
 reasons (the type used to be called "addrem"). The runtime type
 is now just `"add"` — see the Module types section below.
+├── courses-data.js    ← SSOT for the courses pages (see "Courses pages")
+├── stamp.sh           ← ?v= cache stamps for FACTS + courses pages
 ├── maml-logo.png      ← brand logo
 └── CLAUDE.md          ← this file
 ```
@@ -438,12 +440,13 @@ registry in `topnav.js`.
 - **Cache-busting (stamps).** maml.us (Cloudflare) lets browsers keep
   .js/.css for 4 hours (max-age=14400) while HTML is always fresh — an
   edit to facts-data.js was invisible to the teacher for hours. Every
-  local .js/.css in facts/index.html therefore carries `?v=<content
-  hash>`. After editing ANY of them (incl. shared styles.css, topnav.js)
-  run `sh facts/stamp.sh`; `.git/hooks/pre-commit` runs
-  `stamp.sh --check` and blocks a commit with a stale stamp. Never edit
-  a `?v=` by hand. (Other site pages have the same 4h lag — not yet
-  stamped.)
+  local .js/.css in facts/index.html (and the three courses pages)
+  therefore carries `?v=<content hash>`. After editing ANY of them
+  (incl. shared styles.css, topnav.js) run `sh stamp.sh` (repo root;
+  the stamped pages are its `PAGES` list); `.git/hooks/pre-commit` runs
+  `sh stamp.sh --check` and blocks a commit with a stale stamp. Never
+  edit a `?v=` by hand. (Other site pages have the same 4h lag — not
+  yet stamped; add a page to `PAGES` to stamp it.)
 - `facts/build-videos.sh` — rebuilds `facts/videos/*.mp4|jpg`
   and the AUTO-GENERATED `videos/videos.js` (durations) from
   `archive/facts-originals/` (gitignored, ~2.6 GB: every FACTS
@@ -460,6 +463,39 @@ registry in `topnav.js`.
 - `facts/img/qr-maml-us-facts.png|svg` — QR for the printed
   booklet. The booklet's old QR (qr.mobi) is disabled and its
   URL yeswecanmusic.us/folk.arts/facts is dead.
+
+## Courses pages (`courses*.html`)
+
+Đàn tranh + đàn bầu classes hosted with Mekong NYC. URL `/courses`.
+Three pages, one renderer (`courses.js`), one registry:
+
+- `courses.html` (public) · `courses-students.html` (videos, reached
+  via the student code) · `courses-teacher.html` (all videos +
+  submissions, own in-page gate). They are empty shells — the course
+  block (flyer, title, meta) is built by `courses.js`.
+- **`courses-data.js` is the SSOT** — one entry per course: md path,
+  season, flyers (EN/VI → a language switch under the flyer), `days`
+  (e.g. `["sat","mon"]`), `times[instrument][day]`, `meta` rows
+  (kinds: `text` with `body`/`body_vi`, `instruments` = generated),
+  `studentHash` / `teacherHash`. `COURSES_CURRENT` picks the default;
+  any other course stays at `courses.html?id=<id>` and is listed
+  under the hero as an earlier course. The code modal accepts any
+  course's code and lands on that course.
+- `courses/<course>.md` — blurb, schedule table (day columns = the
+  course's `days`; a `break` row = no-class week), per-session
+  detail (`## session N · theme|shared|dan-tranh|dan-bau`). Schema:
+  `courses/dan-tranh-dan-bau-spring-2026.example.md`.
+- **Never guess a session topic.** Fall 2026's email/flyer give the
+  dates and the repertoire (Lý Con Sáo Gò Công / Huế / Quan Họ Bắc
+  Ninh) but no per-session content, so its topics are empty until
+  the teacher supplies them. The companion app (~/Code/Lyconsao) is
+  not deployed yet — link it from the md once it is.
+- Flyers: `courses-assets/`, web JPEGs made from the originals
+  (Fall 2026 set: ~/Downloads/Mekong Music Fall 2026 EN VN Flyers —
+  portrait used here; square/landscape/banner are for other
+  platforms).
+- New course: add a registry entry at the top, point
+  `COURSES_CURRENT` at it, write its md, add flyers, `sh stamp.sh`.
 
 ## Local preview
 

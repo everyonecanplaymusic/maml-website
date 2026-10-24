@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Courses (teacher) — Manhattan Academy of Music and Language</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script src="head-common.js"></script>
+  <link rel="stylesheet" href="styles.css?v=96559844" />
+  <script src="head-common.js?v=916a1435"></script>
 </head>
 <body>
   <div id="site-header" data-base="./"></div>
-  <script src="topnav.js" defer></script>
+  <script src="topnav.js?v=851ed94f" defer></script>
 
   <main>
     <section class="courses-hero">
       <p class="eyebrow">
-        <span class="en">Teacher page · current course</span>
-        <span class="vi">Trang giáo viên · khoá học hiện tại</span>
+        <span class="en">Teacher page</span>
+        <span class="vi">Trang giáo viên</span>
       </p>
       <h1 class="courses-title">
         <span class="en">Courses</span>
@@ -34,62 +34,11 @@
         hiện tất cả — kể cả những video đánh dấu chỉ riêng
         giáo viên.
       </p>
+      <p class="course-nav" id="courseNav"></p>
     </section>
 
-    <section class="course-entry" id="courseEntry">
-      <div class="course-flyer">
-        <img
-          src="courses-assets/flyer-spring-2026.png"
-          alt="Đàn Tranh and Đàn Bầu — Spring 2026 flyer"
-          class="course-flyer-img"
-          draggable="false"
-          oncontextmenu="return false"
-        />
-      </div>
-
-      <div class="course-info">
-        <div class="course-kind">
-          <span class="en">Spring 2026 · Vietnamese Music Classes</span>
-          <span class="vi">Mùa xuân 2026 · Lớp nhạc Việt</span>
-        </div>
-        <h2 class="course-title">
-          <span class="dieu-tranh">Đàn Tranh</span>
-          <span class="course-amp">&amp;</span>
-          <span class="dieu-bau">Đàn Bầu</span>
-        </h2>
-        <p class="course-sub">hosted with Mekong NYC</p>
-
-        <div class="course-blurb" id="courseBlurb">
-          <p class="course-loading">loading…</p>
-        </div>
-
-        <dl class="course-meta">
-          <div>
-            <dt><span class="en">Where</span><span class="vi">ở đâu</span></dt>
-            <dd>
-              Manhattan Academy of Music &amp; Language<br />
-              40 West 135th St., Ste. 1S, New York, NY 10037
-            </dd>
-          </div>
-          <div>
-            <dt><span class="en">Instruments</span><span class="vi">nhạc cụ</span></dt>
-            <dd>
-              <span class="dot dot-tranh"></span>
-              <span class="dieu-tranh">đàn tranh</span>
-              — Sundays 10:40 am–11:30 am · Thursdays 6:30 pm–7:20 pm
-              <br />
-              <span class="dot dot-bau"></span>
-              <span class="dieu-bau">đàn bầu</span>
-              — Sundays 12:00 pm–12:50 pm · Thursdays 7:45 pm–8:35 pm
-            </dd>
-          </div>
-          <div>
-            <dt><span class="en">Prerequisite</span><span class="vi">yêu cầu</span></dt>
-            <dd>none — all are welcome. Instruments can be loaned from Mekong NYC.</dd>
-          </div>
-        </dl>
-      </div>
-    </section>
+    <!-- Filled by courses.js from courses-data.js (flyer, title, meta). -->
+    <section class="course-entry" id="courseEntry"></section>
 
     <section class="course-schedule-section">
       <div class="schedule-head">
@@ -98,17 +47,16 @@
           <span class="vi">Lịch học</span>
         </h2>
         <p class="schedule-note">
-          Click any sun / thu button to open the recording on
-          YouTube. Empty slots mean no recording yet. The
-          videos panel under each session shows the student
-          submissions — type feedback directly into the linked
-          Google Sheet.
+          Click a day's button to open that recording on YouTube.
+          Empty slots mean no recording yet. The videos panel
+          under each session shows the student submissions —
+          type feedback directly into the linked Google Sheet.
         </p>
         <p class="schedule-note-vi">
-          Bấm nút sun / thu để xem bản ghi trên YouTube. Ô
-          trống nghĩa là chưa có recording. Phần video của
-          học viên hiển thị dưới mỗi session — viết phản hồi
-          trực tiếp vào Google Sheet.
+          Bấm nút của từng ngày để xem bản ghi trên YouTube. Ô
+          trống nghĩa là chưa có recording. Phần video của học
+          viên hiển thị dưới mỗi session — viết phản hồi trực
+          tiếp vào Google Sheet.
         </p>
       </div>
 
@@ -119,9 +67,10 @@
   </main>
 
   <div id="site-footer"></div>
-  <script src="sitefooter.js" defer></script>
+  <script src="sitefooter.js?v=3502c957" defer></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="courses.js?v=2026-05-01-howto"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
+  <script src="courses-data.js?v=57c62cd7"></script>
+  <script src="courses.js?v=95b95e71"></script>
 </body>
 </html>
